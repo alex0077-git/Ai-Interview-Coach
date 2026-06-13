@@ -100,6 +100,23 @@ pip install langchain-groq fastapi uvicorn python-dotenv
 
 Create `.env` file:
 
+GROQ_API_KEY=your_groq_api_key_here
+Run backend:
+```bash
+python -m uvicorn app:app --reload
+```
+
+### Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
+```
+
+### Access
+- Frontend: http://localhost:3000
+- API Docs: http://127.0.0.1:8000/docs
+
 
 ## 🎯 Future Enhancements
 
