@@ -85,6 +85,20 @@ User → React Frontend → FastAPI Backend → LangChain → Groq LLM
 6. Progress is tracked across sessions.
 
 ---
+## ⚙️ Setup & Installation
+
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- Groq API Key (free at groq.com)
+
+### Backend Setup
+```bash
+cd ai_interview_coach
+pip install langchain-groq fastapi uvicorn python-dotenv
+```
+
+Create `.env` file:
 
 
 ## 🎯 Future Enhancements
