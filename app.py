@@ -35,15 +35,12 @@ def get_topics(job_role: str):
     return {"topics": topics}
 
 @app.get("/start-interview")
-def start_interview(job_role: str, difficulty: str = "Medium"):
+def start_interview(job_role: str, difficulty: str = "Medium", previous: str = ""):
+    avoid = f"\n\nDo NOT repeat these questions:\n{previous}" if previous else ""
     prompt = f"""Generate exactly 5 {difficulty} level technical interview questions for a {job_role} role.
-{
-    'Focus on basic concepts, definitions and simple problems.' if difficulty == 'Easy' else
-    'Mix of conceptual and practical problems.' if difficulty == 'Medium' else
-    'Advanced, complex problems requiring deep expertise.'
-}
+{'Focus on basic concepts, definitions and simple problems.' if difficulty == 'Easy' else 'Mix of conceptual and practical problems.' if difficulty == 'Medium' else 'Advanced, complex problems requiring deep expertise.'}
 Cover: coding/DSA, system design, domain knowledge, problem solving, practical experience.
-Return ONLY a JSON array of 5 strings, no extra text."""
+Return ONLY a JSON array of 5 strings, no extra text.{avoid}"""
     response = llm.invoke(prompt)
     try:
         content = response.content.strip()
