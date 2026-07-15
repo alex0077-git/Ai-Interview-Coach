@@ -15,6 +15,21 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
   * Job Role
   * Difficulty Level (Easy / Medium / Hard)
 * Powered by Large Language Models using prompt engineering.
+  ### 📄 Resume-Based Personalized Questions
+* Upload your resume PDF
+* AI analyzes your projects, skills, and experience
+* Generates personalized interview questions based on your resume
+
+### 🤝 HR & Behavioral Questions
+* Tell me about yourself
+* Strengths and weaknesses
+* Situational and behavioral questions
+* Complete mock interview experience
+
+### 🎯 Interview Types
+* **Technical** — DSA, System Design, Domain knowledge
+* **HR** — Behavioral and soft skill questions  
+* **Mixed** — Combination of both
 
 ### 🤖 AI Answer Evaluation
 
