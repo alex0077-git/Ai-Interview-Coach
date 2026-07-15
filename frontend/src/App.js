@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 function App() {
   const [jobRole, setJobRole] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
+  const [interviewType, setInterviewType] = useState("Mixed");
+  const [resumeText, setResumeText] = useState("");
+  const [resumeName, setResumeName] = useState("");
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [results, setResults] = useState(null);
@@ -10,14 +13,38 @@ function App() {
   const [stage, setStage] = useState("setup");
   const [sessionHistory, setSessionHistory] = useState([]);
   const [allPreviousQuestions, setAllPreviousQuestions] = useState([]);
+  const fileRef = useRef();
 
   const difficulties = ["Easy", "Medium", "Hard"];
+  const interviewTypes = ["Technical", "HR", "Mixed"];
+
+  const uploadResume = async (file) => {
+    setResumeName(file.name);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("http://127.0.0.1:8000/upload-resume", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    setResumeText(data.resume_text);
+  };
 
   const startInterview = async () => {
     if (!jobRole) return;
     setLoading(true);
     const previousStr = allPreviousQuestions.join(" | ");
-    const res = await fetch(`http://127.0.0.1:8000/start-interview?job_role=${encodeURIComponent(jobRole)}&difficulty=${difficulty}&previous=${encodeURIComponent(previousStr)}`);
+    const res = await fetch("http://127.0.0.1:8000/start-interview-full", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        job_role: jobRole,
+        difficulty,
+        interview_type: interviewType,
+        resume_text: resumeText,
+        previous: previousStr,
+      }),
+    });
     const data = await res.json();
     setQuestions(data.questions);
     setAllPreviousQuestions(prev => [...prev, ...data.questions]);
@@ -45,9 +72,9 @@ function App() {
     setSessionHistory(prev => [...prev, {
       role: jobRole,
       difficulty,
+      type: interviewType,
       total: data.total_score,
       max: data.max_score,
-      time: new Date().toLocaleTimeString()
     }]);
     setStage("results");
     setLoading(false);
@@ -58,6 +85,8 @@ function App() {
     setQuestions([]);
     setAnswers({});
     setResults(null);
+    setResumeText("");
+    setResumeName("");
     setStage("setup");
   };
 
@@ -108,7 +137,7 @@ function App() {
             <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
               {sessionHistory.map((s, i) => (
                 <span key={i} style={{ fontSize: "11px", color: "#64748b" }}>
-                  #{i + 1} {s.role} ({s.difficulty}) — {s.total}/{s.max}
+                  #{i + 1} {s.role} · {s.type} · {s.difficulty} — {s.total}/{s.max}
                 </span>
               ))}
             </div>
@@ -118,15 +147,33 @@ function App() {
         {/* SETUP */}
         {stage === "setup" && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px" }}>
-            <h2 style={{ color: "#e2e8f0", margin: "0 0 20px", fontSize: "18px" }}>Start your mock interview</h2>
+            <h2 style={{ color: "#e2e8f0", margin: "0 0 24px", fontSize: "18px" }}>Start your mock interview</h2>
+
+            {/* Job Role */}
             <input
-              placeholder="Enter job role (e.g. AI Engineer, Python Developer)"
+              placeholder="Enter job role (e.g. AI Engineer, Software Engineer)"
               value={jobRole}
               onChange={(e) => setJobRole(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && startInterview()}
               style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "15px", marginBottom: "20px", boxSizing: "border-box" }}
             />
 
+            {/* Interview Type */}
+            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Interview Type</p>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+              {interviewTypes.map(t => (
+                <button key={t} onClick={() => setInterviewType(t)}
+                  style={{
+                    flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600",
+                    background: interviewType === t ? "#6366f1" : "#334155",
+                    color: interviewType === t ? "white" : "#94a3b8"
+                  }}>
+                  {t === "Technical" ? "💻 Technical" : t === "HR" ? "🤝 HR" : "🎯 Mixed"}
+                </button>
+              ))}
+            </div>
+
+            {/* Difficulty */}
             <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Difficulty</p>
             <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
               {difficulties.map(d => (
@@ -141,6 +188,33 @@ function App() {
               ))}
             </div>
 
+            {/* Resume Upload */}
+            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Resume (optional — for personalized questions)</p>
+            <div
+              onClick={() => fileRef.current.click()}
+              style={{
+                border: "2px dashed #334155", borderRadius: "10px", padding: "20px",
+                textAlign: "center", cursor: "pointer", marginBottom: "20px",
+                background: resumeText ? "#0f2a1a" : "transparent",
+                borderColor: resumeText ? "#10b981" : "#334155"
+              }}>
+              <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }}
+                onChange={(e) => e.target.files[0] && uploadResume(e.target.files[0])} />
+              {resumeText ? (
+                <div>
+                  <div style={{ color: "#10b981", fontSize: "20px" }}>✅</div>
+                  <div style={{ color: "#10b981", fontSize: "13px", marginTop: "4px" }}>{resumeName} uploaded!</div>
+                  <div style={{ color: "#64748b", fontSize: "11px", marginTop: "2px" }}>Questions will be personalized to your resume</div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ color: "#64748b", fontSize: "24px" }}>📄</div>
+                  <div style={{ color: "#64748b", fontSize: "13px", marginTop: "4px" }}>Click to upload your resume PDF</div>
+                  <div style={{ color: "#475569", fontSize: "11px", marginTop: "2px" }}>Optional — skip if not needed</div>
+                </div>
+              )}
+            </div>
+
             <button onClick={startInterview} disabled={!jobRole || loading}
               style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "none", background: !jobRole ? "#334155" : "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: !jobRole ? "not-allowed" : "pointer" }}>
               {loading ? "Loading questions..." : "Start Interview →"}
@@ -151,9 +225,6 @@ function App() {
                 {allPreviousQuestions.length} questions already practiced — new ones will be different!
               </p>
             )}
-            <p style={{ color: "#64748b", fontSize: "13px", textAlign: "center", marginTop: "8px", marginBottom: 0 }}>
-              5 questions · {difficulty} level
-            </p>
           </div>
         )}
 
@@ -163,12 +234,13 @@ function App() {
             <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: "#94a3b8", fontSize: "14px" }}>
                 Role: <span style={{ color: "#6366f1", fontWeight: "600" }}>{jobRole}</span>
-                <span style={{ marginLeft: "10px", padding: "2px 8px", borderRadius: "10px", fontSize: "12px", fontWeight: "600",
+                <span style={{ marginLeft: "8px", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: "600", background: "#1e1b4b", color: "#818cf8" }}>{interviewType}</span>
+                <span style={{ marginLeft: "6px", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: "600",
                   background: difficulty === "Easy" ? "#064e3b" : difficulty === "Medium" ? "#451a03" : "#450a0a",
                   color: difficulty === "Easy" ? "#10b981" : difficulty === "Medium" ? "#f59e0b" : "#ef4444"
                 }}>{difficulty}</span>
               </span>
-              <span style={{ color: "#94a3b8", fontSize: "14px" }}>{Object.keys(answers).filter(k => answers[k]?.trim()).length} / {questions.length} answered</span>
+              <span style={{ color: "#94a3b8", fontSize: "14px" }}>{Object.keys(answers).filter(k => answers[k]?.trim()).length} / {questions.length}</span>
             </div>
 
             {questions.map((q, i) => (
@@ -203,7 +275,7 @@ function App() {
                 {results.total_score}/{results.max_score}
               </div>
               <div style={{ marginTop: "8px", fontSize: "14px", color: "#94a3b8" }}>
-                {pct(results.total_score, results.max_score)}% · {difficulty} level
+                {pct(results.total_score, results.max_score)}% · {interviewType} · {difficulty}
               </div>
               <p style={{ color: "#94a3b8", margin: "8px 0 0", fontSize: "14px" }}>
                 {results.total_score >= 35 ? "Excellent! You're interview ready!" :
@@ -234,7 +306,7 @@ function App() {
 
             <button onClick={restart}
               style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: "pointer", marginTop: "8px" }}>
-              Next Interview (New Questions)
+              Start New Interview
             </button>
           </div>
         )}

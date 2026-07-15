@@ -1,10 +1,14 @@
 from langchain_groq import ChatGroq
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from pypdf import PdfReader
 import re
 import json
-from dotenv import load_dotenv
+import os
+import io
+
 load_dotenv()
 
 app = FastAPI()
@@ -16,31 +20,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-import os
 llm = ChatGroq(api_key=os.environ.get("GROQ_API_KEY"), model="llama-3.3-70b-versatile")
+
 class InterviewRequest(BaseModel):
     job_role: str
     user_answer: str
     question: str
     topic: str = "General"
 
-@app.get("/get-topics")
-def get_topics(job_role: str):
-    prompt = f"List exactly 5 relevant technical interview topics for a {job_role} role. Return only a JSON array of strings, nothing else."
-    response = llm.invoke(prompt)
-    try:
-        topics = json.loads(response.content)
-    except:
-        topics = ["DSA", "System Design", "Python", "Database", "General"]
-    return {"topics": topics}
+@app.post("/upload-resume")
+async def upload_resume(file: UploadFile = File(...)):
+    contents = await file.read()
+    reader = PdfReader(io.BytesIO(contents))
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return {"resume_text": text}
 
-@app.get("/start-interview")
-def start_interview(job_role: str, difficulty: str = "Medium", previous: str = ""):
+@app.post("/start-interview-full")
+def start_interview_full(data: dict):
+    job_role = data.get("job_role", "Software Engineer")
+    difficulty = data.get("difficulty", "Medium")
+    resume_text = data.get("resume_text", "")
+    previous = data.get("previous", "")
+    interview_type = data.get("interview_type", "Mixed")
+
     avoid = f"\n\nDo NOT repeat these questions:\n{previous}" if previous else ""
-    prompt = f"""Generate exactly 5 {difficulty} level technical interview questions for a {job_role} role.
-{'Focus on basic concepts, definitions and simple problems.' if difficulty == 'Easy' else 'Mix of conceptual and practical problems.' if difficulty == 'Medium' else 'Advanced, complex problems requiring deep expertise.'}
-Cover: coding/DSA, system design, domain knowledge, problem solving, practical experience.
-Return ONLY a JSON array of 5 strings, no extra text.{avoid}"""
+
+    if resume_text:
+        resume_section = f"""
+Candidate's Resume:
+{resume_text[:2000]}
+
+Generate personalized questions based on this resume — ask about their specific projects, skills, and experiences mentioned above.
+"""
+    else:
+        resume_section = ""
+
+    if interview_type == "Technical":
+        type_instruction = "Focus only on technical questions — DSA, system design, coding, and domain knowledge."
+    elif interview_type == "HR":
+        type_instruction = """Focus only on HR and behavioral questions such as:
+- Tell me about yourself
+- What are your strengths and weaknesses?
+- Why should we hire you?
+- Where do you see yourself in 5 years?
+- Describe a challenging situation you faced
+- Tell me about a failure and what you learned
+- Why do you want to join this company?
+- What are your salary expectations?"""
+    else:
+        type_instruction = """Mix of both technical AND HR/behavioral questions. Include:
+- 2-3 technical questions (DSA, system design, domain)
+- 2-3 HR/behavioral questions (strengths, weaknesses, situational)"""
+
+    prompt = f"""You are a professional interviewer conducting a {difficulty} level interview for a {job_role} role.
+
+{type_instruction}
+{resume_section}
+
+Generate exactly 5 interview questions.
+{avoid}
+
+Return ONLY a JSON array of 5 strings, no extra text.
+Example: ["Question 1", "Question 2", "Question 3", "Question 4", "Question 5"]"""
+
     response = llm.invoke(prompt)
     try:
         content = response.content.strip()
@@ -48,7 +92,7 @@ Return ONLY a JSON array of 5 strings, no extra text.{avoid}"""
             content = content.split("```")[1].replace("json", "").strip()
         questions = json.loads(content)
     except:
-        questions = [f"Tell me about your experience with {job_role}." for _ in range(5)]
+        questions = [f"Tell me about yourself and your experience with {job_role}." for _ in range(5)]
     return {"questions": questions}
 
 @app.post("/evaluate-all")
@@ -64,6 +108,8 @@ You are an expert interviewer for {job_role} roles.
 Difficulty: {difficulty}
 Question: {qa['question']}
 Candidate answer: {qa['answer']}
+
+Evaluate both technical accuracy AND communication skills.
 
 Respond in exactly this format:
 SCORE: [0-10]
