@@ -13,6 +13,7 @@ function App() {
   const [stage, setStage] = useState("setup");
   const [sessionHistory, setSessionHistory] = useState([]);
   const [allPreviousQuestions, setAllPreviousQuestions] = useState([]);
+  const [listening, setListening] = useState(null);
   const fileRef = useRef();
 
   const difficulties = ["Easy", "Medium", "Hard"];
@@ -52,6 +53,32 @@ function App() {
     setResults(null);
     setStage("interview");
     setLoading(false);
+  };
+
+  const startListening = (i) => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      alert("Speech recognition not supported. Please use Chrome browser.");
+      return;
+    }
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setListening(i);
+    recognition.onend = () => setListening(null);
+    recognition.onerror = () => setListening(null);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setAnswers(prev => ({
+        ...prev,
+        [i]: (prev[i] ? prev[i] + " " : "") + transcript
+      }));
+    };
+
+    recognition.start();
   };
 
   const submitInterview = async () => {
@@ -149,7 +176,6 @@ function App() {
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px" }}>
             <h2 style={{ color: "#e2e8f0", margin: "0 0 24px", fontSize: "18px" }}>Start your mock interview</h2>
 
-            {/* Job Role */}
             <input
               placeholder="Enter job role (e.g. AI Engineer, Software Engineer)"
               value={jobRole}
@@ -158,7 +184,6 @@ function App() {
               style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "15px", marginBottom: "20px", boxSizing: "border-box" }}
             />
 
-            {/* Interview Type */}
             <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Interview Type</p>
             <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
               {interviewTypes.map(t => (
@@ -173,7 +198,6 @@ function App() {
               ))}
             </div>
 
-            {/* Difficulty */}
             <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Difficulty</p>
             <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
               {difficulties.map(d => (
@@ -188,7 +212,6 @@ function App() {
               ))}
             </div>
 
-            {/* Resume Upload */}
             <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Resume (optional — for personalized questions)</p>
             <div
               onClick={() => fileRef.current.click()}
@@ -249,13 +272,32 @@ function App() {
                   <span style={{ background: "#6366f1", color: "white", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", flexShrink: 0 }}>{i + 1}</span>
                   <p style={{ color: "#e2e8f0", margin: 0, lineHeight: "1.6", fontSize: "15px" }}>{q}</p>
                 </div>
+
                 <textarea
-                  placeholder={`Your answer for Q${i + 1}...`}
+                  placeholder={`Type or speak your answer for Q${i + 1}...`}
                   value={answers[i] || ""}
                   onChange={(e) => setAnswers(prev => ({ ...prev, [i]: e.target.value }))}
                   rows={4}
                   style={{ width: "100%", padding: "12px", borderRadius: "8px", border: answers[i]?.trim() ? "1px solid #10b981" : "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "14px", resize: "vertical", boxSizing: "border-box" }}
                 />
+
+                <button
+                  onClick={() => startListening(i)}
+                  disabled={listening !== null}
+                  style={{
+                    marginTop: "10px", padding: "10px 20px", borderRadius: "8px",
+                    border: "none", cursor: listening !== null ? "not-allowed" : "pointer", fontSize: "14px", fontWeight: "600",
+                    background: listening === i ? "#ef4444" : "#6366f1",
+                    color: "white", display: "flex", alignItems: "center", gap: "8px"
+                  }}>
+                  {listening === i ? "🔴 Listening... (speak now)" : "🎤 Speak Answer"}
+                </button>
+
+                {listening === i && (
+                  <p style={{ color: "#f59e0b", fontSize: "12px", marginTop: "8px" }}>
+                    Listening... speak clearly, then pause to stop.
+                  </p>
+                )}
               </div>
             ))}
 
