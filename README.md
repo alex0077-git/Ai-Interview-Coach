@@ -8,82 +8,76 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 
 ## ✨ Features
 
+### 🎙️ Voice-to-Voice AI Interview Simulation (NEW)
+* **Immersive Audio-First Interface:** AI reads questions out loud via text-to-speech without displaying text on-screen, enforcing active listening like a real interview.
+* **Continuous Speech Recognition:** Uses the Web Speech API (`recognition.continuous = true`) to keep the microphone active through natural pauses and thinking gaps.
+* **Manual Answer Control:** Candidates control the flow with an "End Answer" button, ensuring their complete thoughts are captured before moving on.
+
 ### 🎯 Dynamic Interview Generation
-
 * Generate interview questions based on:
-
   * Job Role
   * Difficulty Level (Easy / Medium / Hard)
-* Powered by Large Language Models using prompt engineering.
-  ### 📄 Resume-Based Personalized Questions
-* Upload your resume PDF
-* AI analyzes your projects, skills, and experience
-* Generates personalized interview questions based on your resume
+* Powered by Large Language Models using advanced prompt engineering.
+
+### 📄 Resume-Based Personalized Questions
+* Upload your resume PDF.
+* AI analyzes your projects, skills, and experience.
+* Generates personalized interview questions tailored specifically to your background.
 
 ### 🤝 HR & Behavioral Questions
-* Tell me about yourself
-* Strengths and weaknesses
-* Situational and behavioral questions
-* Complete mock interview experience
+* Tell me about yourself.
+* Strengths and weaknesses.
+* Situational and behavioral questions.
+* Complete mock interview experience.
 
 ### 🎯 Interview Types
-* **Technical** — DSA, System Design, Domain knowledge
-* **HR** — Behavioral and soft skill questions  
-* **Mixed** — Combination of both
+* **Technical** — DSA, System Design, Domain knowledge.
+* **HR** — Behavioral and soft skill questions.  
+* **Mixed** — Combination of both.
 
 ### 🤖 AI Answer Evaluation
-
-* Scores answers on a scale of **0–10**
+* Scores answers on a scale of **0–10**.
 * Provides:
-
-  * Detailed feedback
-  * Strengths
-  * Areas for improvement
-  * Better sample answers
+  * Detailed feedback.
+  * Strengths.
+  * Areas for improvement.
+  * Better sample answers.
 
 ### 📈 Progress Tracking
-
 * Track interview performance across multiple sessions.
 * Visual score trends and performance analytics.
 
 ### 🔥 LLM-Powered Experience
-
-* Uses Groq-hosted LLaMA models for fast inference.
+* Uses Groq-hosted LLaMA models for lightning-fast inference.
 * LangChain orchestration for prompt management and response generation.
 
 ### 💻 Modern Full-Stack Architecture
-
-* React frontend
-* FastAPI backend
-* REST API communication
-* Responsive user interface
+* React frontend with Web Speech API integration.
+* FastAPI backend.
+* REST API communication.
+* Clean, responsive user interface.
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Frontend
-
 * React.js
+* Web Speech API (Speech Recognition & Synthesis)
 * JavaScript
-* HTML
-* CSS
+* HTML & CSS
 
 ### Backend
-
 * FastAPI
 * Python
 
 ### AI & LLM
-
 * LangChain
 * Groq API
 * LLaMA 3.3 70B
 
 ### Development Tools
-
-* Git
-* GitHub
+* Git & GitHub
 * VS Code
 
 ---
@@ -92,12 +86,13 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 
 User → React Frontend → FastAPI Backend → LangChain → Groq LLM
 
-1. User selects role and difficulty.
-2. AI generates interview questions.
-3. User submits answers.
-4. LLM evaluates responses.
-5. Scores and feedback are displayed.
-6. Progress is tracked across sessions.
+1. User selects role, difficulty, and uploads a resume.
+2. AI generates contextual interview questions.
+3. AI speaks the question; user responds via continuous voice recognition.
+4. User submits the transcribed answer.
+5. LLM evaluates responses.
+6. Scores and actionable feedback are displayed.
+7. Progress is tracked across sessions.
 
 ---
 ## ⚙️ Setup & Installation
@@ -106,51 +101,10 @@ User → React Frontend → FastAPI Backend → LangChain → Groq LLM
 - Python 3.11+
 - Node.js 18+
 - Groq API Key (free at groq.com)
+- Chrome Browser (required for Web Speech API compatibility)
 
 ### Backend Setup
+
 ```bash
 cd ai_interview_coach
 pip install langchain-groq fastapi uvicorn python-dotenv
-```
-
-Create `.env` file:
-
-GROQ_API_KEY=your_groq_api_key_here
-Run backend:
-```bash
-python -m uvicorn app:app --reload
-```
-
-### Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
-
-### Access
-- Frontend: http://localhost:3000
-- API Docs: http://127.0.0.1:8000/docs
-
-
-## 🎯 Future Enhancements
-
-* Voice-based interviews
-* Resume-based question generation
-* Video interview simulation
-* Multi-language support
-* AI-generated interview reports
-* User authentication and cloud storage
-
----
-
-## 👨‍💻 Author
-
-**Alex Antony**
-
-* GitHub: https://github.com/alex0077-git
-* LinkedIn: https://www.linkedin.com/in/alex-antony-9586173b1
-
----
-
-
