@@ -8,7 +8,7 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 
 ## ✨ Features
 
-### 🎙️ Voice-to-Voice AI Interview Simulation (NEW)
+### 🎙️ Voice-to-Voice AI Interview Simulation 
 * **Immersive Audio-First Interface:** AI reads questions out loud via text-to-speech without displaying text on-screen, enforcing active listening like a real interview.
 * **Continuous Speech Recognition:** Uses the Web Speech API (`recognition.continuous = true`) to keep the microphone active through natural pauses and thinking gaps.
 * **Manual Answer Control:** Candidates control the flow with an "End Answer" button, ensuring their complete thoughts are captured before moving on.
