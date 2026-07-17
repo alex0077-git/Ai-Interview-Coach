@@ -34,6 +34,11 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 * **Technical** — DSA, System Design, Domain knowledge.
 * **HR** — Behavioral and soft skill questions.  
 * **Mixed** — Combination of both.
+  
+### ⏱️ Time-Based Interview Sessions
+* Choose interview durations such as **5, 10, 15, or 20 minutes**.
+* AI continues asking questions until the selected time expires instead of using a fixed number of questions.
+* If a question is asked before the timer ends, candidates are allowed to complete their answer without interruption.
 
 ### 🤖 AI Answer Evaluation
 * Scores answers on a scale of **0–10**.
@@ -86,13 +91,13 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 
 User → React Frontend → FastAPI Backend → LangChain → Groq LLM
 
-1. User selects role, difficulty, and uploads a resume.
-2. AI generates contextual interview questions.
-3. AI speaks the question; user responds via continuous voice recognition.
-4. User submits the transcribed answer.
-5. LLM evaluates responses.
-6. Scores and actionable feedback are displayed.
-7. Progress is tracked across sessions.
+1. User selects the interview type, difficulty level, interview duration, and optionally uploads a resume.
+2. AI starts the interview with a natural voice greeting.
+3. AI asks questions using voice.
+4. The candidate responds using continuous speech recognition.
+5. The candidate manually ends their answer.
+6. The AI evaluates the response and asks the next question until the selected interview duration expires.
+7. Once the final answer is completed, the interview ends and detailed feedback is generated.
 
 ---
 ## ⚙️ Setup & Installation
