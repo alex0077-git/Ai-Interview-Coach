@@ -37,6 +37,38 @@ async def upload_resume(file: UploadFile = File(...)):
         text += page.extract_text()
     return {"resume_text": text}
 
+@app.post("/get-next-question")
+def get_next_question(data: dict):
+    job_role = data.get("job_role", "Software Engineer")
+    difficulty = data.get("difficulty", "Medium")
+    interview_type = data.get("interview_type", "Mixed")
+    resume_text = data.get("resume_text", "")
+    previous = data.get("previous", [])
+
+    avoid = "\n\nDo NOT ask these questions again:\n" + "\n".join(previous) if previous else ""
+
+    if resume_text:
+        resume_section = f"\nCandidate Resume:\n{resume_text[:2000]}\nAsk about their specific projects and skills."
+    else:
+        resume_section = ""
+
+    if interview_type == "Technical":
+        type_instruction = "Ask a technical question — DSA, system design, coding, or domain knowledge."
+    elif interview_type == "HR":
+        type_instruction = "Ask an HR or behavioral question — strengths, weaknesses, situational, career goals, tell me about yourself."
+    else:
+        type_instruction = "Ask either a technical OR behavioral/HR question — mix them naturally like a real interview."
+
+    prompt = f"""You are a professional interviewer for a {job_role} role ({difficulty} level).
+{type_instruction}
+{resume_section}
+{avoid}
+
+Generate exactly ONE interview question. Return ONLY the question, nothing else. No numbering, no explanation, no preamble."""
+
+    response = llm.invoke(prompt)
+    return {"question": response.content.strip()}
+
 @app.post("/start-interview-full")
 def start_interview_full(data: dict):
     job_role = data.get("job_role", "Software Engineer")
