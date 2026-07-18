@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 
 function App() {
   const [jobRole, setJobRole] = useState("");
@@ -32,6 +32,7 @@ function App() {
   const difficulties = ["Easy", "Medium", "Hard"];
   const interviewTypes = ["Technical", "HR", "Mixed"];
   const durations = [5, 10, 15, 20];
+  const getStorageKey = (role) => `prev_questions_${role.toLowerCase().replace(/\s/g, "_")}`;
 
   const speakText = (text, onDone) => {
     window.speechSynthesis.cancel();
@@ -51,7 +52,6 @@ function App() {
     timeLeftRef.current = totalSeconds;
     timeExpiredRef.current = false;
     setTimeExpired(false);
-
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
       setTimeLeft(timeLeftRef.current);
@@ -63,21 +63,13 @@ function App() {
     }, 1000);
   };
 
-  const stopTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-  };
+  const stopTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
 
   const fetchNextQuestion = async (prevQs) => {
     const res = await fetch("http://127.0.0.1:8000/get-next-question", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        job_role: jobRole,
-        difficulty,
-        interview_type: interviewType,
-        resume_text: resumeText,
-        previous: prevQs,
-      }),
+      body: JSON.stringify({ job_role: jobRole, difficulty, interview_type: interviewType, resume_text: resumeText, previous: prevQs }),
     });
     const data = await res.json();
     return data.question;
@@ -91,19 +83,14 @@ function App() {
     setCurrentTranscript("");
     transcriptRef.current = "";
     setAiStatus("AI is asking question...");
-    speakText(question, () => {
-      setAiStatus("Your turn — click Speak to answer");
-    });
+    speakText(question, () => { setAiStatus("Your turn — click Speak to answer"); });
   };
 
   const uploadResume = async (file) => {
     setResumeName(file.name);
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("http://127.0.0.1:8000/upload-resume", {
-      method: "POST",
-      body: formData,
-    });
+    const res = await fetch("http://127.0.0.1:8000/upload-resume", { method: "POST", body: formData });
     const data = await res.json();
     setResumeText(data.resume_text);
   };
@@ -112,107 +99,82 @@ function App() {
     if (!jobRole) return;
     setLoading(true);
     setAllQA([]);
-    setPreviousQuestions([]);
     setCurrentQuestion("");
     setCurrentTranscript("");
     setResults(null);
     setQuestionNum(0);
+
+    // Load previous questions from localStorage
+    try {
+      const saved = localStorage.getItem(getStorageKey(jobRole));
+      const savedPrev = saved ? JSON.parse(saved) : [];
+      setPreviousQuestions(savedPrev);
+    } catch { setPreviousQuestions([]); }
+
     setStage("interview");
     setLoading(false);
 
-    // Greeting first
     const greeting = `Hi, welcome! Thank you for joining today's ${interviewType} interview for the ${jobRole} role. This will be a ${duration}-minute interview at ${difficulty} level. Let's begin!`;
     setAiStatus("AI Interviewer is greeting you...");
-
     speakText(greeting, async () => {
       startTimer(duration);
-      await askNextQuestion([], 1);
+      const saved = localStorage.getItem(getStorageKey(jobRole));
+      const savedPrev = saved ? JSON.parse(saved) : [];
+      await askNextQuestion(savedPrev, 1);
     });
   };
 
   const startListening = () => {
-  if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-    alert("Please use Chrome browser for speech recognition.");
-    return;
-  }
-  window.speechSynthesis.cancel();
-  setSpeaking(false);
-
-  const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-  
-  let finalTranscript = "";
-  let isEnded = false;
-
-  const createRecognition = () => {
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onstart = () => {
-      setListening(true);
-      setAiStatus("Listening... speak your answer");
-    };
-
-    recognition.onresult = (event) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript + " ";
-        } else {
-          interim += event.results[i][0].transcript;
-        }
-      }
-      transcriptRef.current = finalTranscript;
-      setCurrentTranscript(finalTranscript + interim);
-    };
-
-    recognition.onend = () => {
-      // Auto restart if user hasn't clicked End Answer
-      if (!isEnded) {
-        try {
-          recognition.start();
-        } catch (e) {
-          // Create fresh instance if restart fails
-          const newRec = createRecognition();
-          recognitionRef.current = newRec;
-          newRec.start();
-        }
-      }
-    };
-
-    recognition.onerror = (event) => {
-      if (event.error === "no-speech" || event.error === "audio-capture") {
-        // Non fatal — just restart
-        if (!isEnded) {
-          try { recognition.start(); } catch(e) {}
-        }
-      } else {
-        setListening(false);
-        setAiStatus("Your turn — click Speak to answer");
-      }
-    };
-
-    return recognition;
-  };
-
-  const recognition = createRecognition();
-  
-  // Store stop function in ref
-  recognitionRef.current = {
-    stop: () => {
-      isEnded = true;
-      recognition.stop();
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      alert("Please use Chrome browser for speech recognition.");
+      return;
     }
-  };
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+    let finalTranscript = "";
+    let isEnded = false;
 
-  recognition.start();
-};
+    const createRecognition = () => {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onstart = () => { setListening(true); setAiStatus("Listening... speak your answer"); };
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
+          else interim += event.results[i][0].transcript;
+        }
+        transcriptRef.current = finalTranscript;
+        setCurrentTranscript(finalTranscript + interim);
+      };
+      recognition.onend = () => {
+        if (!isEnded) {
+          try { recognition.start(); } catch (e) {
+            const newRec = createRecognition();
+            recognitionRef.current = { stop: () => { isEnded = true; newRec.stop(); } };
+            newRec.start();
+          }
+        }
+      };
+      recognition.onerror = (event) => {
+        if (event.error === "no-speech" || event.error === "audio-capture") {
+          if (!isEnded) { try { recognition.start(); } catch (e) { } }
+        } else { setListening(false); setAiStatus("Your turn — click Speak to answer"); }
+      };
+      return recognition;
+    };
+
+    const recognition = createRecognition();
+    recognitionRef.current = { stop: () => { isEnded = true; recognition.stop(); } };
+    recognition.start();
+  };
 
   const endAnswer = async () => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     setListening(false);
-
     const answer = transcriptRef.current.trim() || currentTranscript.trim();
     if (!answer) { setAiStatus("No answer detected. Please try again."); return; }
 
@@ -220,10 +182,13 @@ function App() {
     setAllQA(newQA);
     const newPrevQs = [...previousQuestions, currentQuestion];
     setPreviousQuestions(newPrevQs);
+
+    // Save to localStorage
+    try { localStorage.setItem(getStorageKey(jobRole), JSON.stringify(newPrevQs)); } catch { }
+
     setCurrentTranscript("");
     transcriptRef.current = "";
 
-    // Check if time expired
     if (timeExpiredRef.current) {
       setAiStatus("Interview complete! Evaluating your answers...");
       stopTimer();
@@ -244,11 +209,7 @@ function App() {
     });
     const data = await res.json();
     setResults(data);
-    setSessionHistory(prev => [...prev, {
-      role: jobRole, difficulty, type: interviewType, duration,
-      total: data.total_score, max: data.max_score,
-      questions: qaList.length,
-    }]);
+    setSessionHistory(prev => [...prev, { role: jobRole, difficulty, type: interviewType, duration, total: data.total_score, max: data.max_score, questions: qaList.length }]);
     setStage("results");
     setLoading(false);
   };
@@ -264,13 +225,7 @@ function App() {
   };
 
   const fullReset = () => { restart(); setSessionHistory([]); };
-
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    return `${m}:${s}`;
-  };
-
+  const formatTime = (secs) => `${Math.floor(secs / 60).toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
   const scoreColor = (s) => s >= 7 ? "#10b981" : s >= 4 ? "#f59e0b" : "#ef4444";
   const scoreLabel = (s) => s >= 7 ? "Great!" : s >= 4 ? "Okay" : "Needs work";
   const pct = (s, m) => Math.round((s / m) * 100);
@@ -279,13 +234,11 @@ function App() {
     <div style={{ minHeight: "100vh", background: "#0f172a", color: "#e2e8f0", fontFamily: "Inter, sans-serif", padding: "30px 20px" }}>
       <div style={{ maxWidth: "700px", margin: "0 auto" }}>
 
-        {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#6366f1", margin: 0 }}>AI Interview Coach</h1>
           <p style={{ color: "#94a3b8", marginTop: "8px" }}>Practice. Improve. Get hired.</p>
         </div>
 
-        {/* Session History */}
         {sessionHistory.length > 0 && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
@@ -304,14 +257,13 @@ function App() {
             <div style={{ marginTop: "10px" }}>
               {sessionHistory.map((s, i) => (
                 <div key={i} style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                  #{i + 1} {s.role} · {s.type} · {s.difficulty} · {s.duration}min · {s.questions} questions — {s.total}/{s.max}
+                  #{i + 1} {s.role} · {s.type} · {s.difficulty} · {s.duration}min · {s.questions}q — {s.total}/{s.max}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* SETUP */}
         {stage === "setup" && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px" }}>
             <h2 style={{ color: "#e2e8f0", margin: "0 0 24px", fontSize: "18px" }}>Start your mock interview</h2>
@@ -368,14 +320,10 @@ function App() {
           </div>
         )}
 
-        {/* INTERVIEW */}
         {stage === "interview" && (
           <div>
-            {/* Timer + Info bar */}
             <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "#94a3b8", fontSize: "13px" }}>
-                {jobRole} · {interviewType} · {difficulty}
-              </span>
+              <span style={{ color: "#94a3b8", fontSize: "13px" }}>{jobRole} · {interviewType} · {difficulty}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <span style={{ fontSize: "20px", fontWeight: "700", color: timeExpired ? "#ef4444" : timeLeft <= 60 ? "#f59e0b" : "#10b981", fontFamily: "monospace" }}>
                   {formatTime(timeLeft)}
@@ -384,32 +332,17 @@ function App() {
               </div>
             </div>
 
-            {/* Timer progress bar */}
             <div style={{ background: "#334155", borderRadius: "4px", height: "4px", marginBottom: "20px" }}>
-              <div style={{
-                background: timeExpired ? "#ef4444" : timeLeft <= 60 ? "#f59e0b" : "#6366f1",
-                borderRadius: "4px", height: "4px",
-                width: `${(timeLeft / (duration * 60)) * 100}%`,
-                transition: "width 1s linear"
-              }} />
+              <div style={{ background: timeExpired ? "#ef4444" : timeLeft <= 60 ? "#f59e0b" : "#6366f1", borderRadius: "4px", height: "4px", width: `${(timeLeft / (duration * 60)) * 100}%`, transition: "width 1s linear" }} />
             </div>
 
-            {/* AI Avatar */}
             <div style={{ background: "#1e293b", borderRadius: "16px", padding: "40px 24px", textAlign: "center", marginBottom: "20px" }}>
-              <div style={{
-                width: "90px", height: "90px", borderRadius: "50%",
-                background: speaking ? "#1e3a5f" : listening ? "#064e3b" : "#1e293b",
-                border: `3px solid ${speaking ? "#3b82f6" : listening ? "#10b981" : "#334155"}`,
-                margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "40px", transition: "all 0.3s"
-              }}>
+              <div style={{ width: "90px", height: "90px", borderRadius: "50%", background: speaking ? "#1e3a5f" : listening ? "#064e3b" : "#1e293b", border: `3px solid ${speaking ? "#3b82f6" : listening ? "#10b981" : "#334155"}`, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", transition: "all 0.3s" }}>
                 {speaking ? "🎙️" : listening ? "👂" : "🤖"}
               </div>
-
               <div style={{ fontSize: "16px", color: speaking ? "#93c5fd" : listening ? "#6ee7b7" : "#94a3b8", fontWeight: "500", marginBottom: "6px" }}>
                 {speaking ? "AI Interviewer is speaking..." : listening ? "Listening to your answer..." : aiStatus}
               </div>
-
               {questionNum > 0 && (
                 <div style={{ fontSize: "12px", color: "#475569", marginTop: "4px" }}>
                   Question {questionNum} · {allQA.length} answered so far
@@ -417,7 +350,6 @@ function App() {
               )}
             </div>
 
-            {/* Transcript */}
             {(listening || currentTranscript) && (
               <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "20px" }}>
                 <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 8px" }}>Your answer (transcript):</p>
@@ -427,7 +359,6 @@ function App() {
               </div>
             )}
 
-            {/* Buttons */}
             <div style={{ display: "flex", gap: "12px" }}>
               {!listening ? (
                 <button onClick={startListening} disabled={speaking || loading}
@@ -448,7 +379,6 @@ function App() {
           </div>
         )}
 
-        {/* EVALUATING */}
         {stage === "evaluating" && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "60px 24px", textAlign: "center" }}>
             <div style={{ fontSize: "48px", marginBottom: "20px" }}>🤖</div>
@@ -457,7 +387,6 @@ function App() {
           </div>
         )}
 
-        {/* RESULTS */}
         {stage === "results" && results && (
           <div>
             <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
@@ -470,8 +399,7 @@ function App() {
               </div>
               <p style={{ color: "#94a3b8", margin: "8px 0 0", fontSize: "14px" }}>
                 {results.total_score >= results.max_score * 0.7 ? "Excellent! You're interview ready!" :
-                  results.total_score >= results.max_score * 0.5 ? "Good performance. Keep practicing!" :
-                    "Keep practicing. You'll get there!"}
+                  results.total_score >= results.max_score * 0.5 ? "Good performance. Keep practicing!" : "Keep practicing. You'll get there!"}
               </p>
             </div>
 

@@ -8,6 +8,7 @@ import re
 import json
 import os
 import io
+import random
 
 load_dotenv()
 
@@ -20,7 +21,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-llm = ChatGroq(api_key=os.environ.get("GROQ_API_KEY"), model="llama-3.3-70b-versatile")
+llm = ChatGroq(
+    api_key=os.environ.get("GROQ_API_KEY"),
+    model="llama-3.3-70b-versatile",
+    temperature=0.9
+)
 
 class InterviewRequest(BaseModel):
     job_role: str
@@ -45,8 +50,6 @@ def get_next_question(data: dict):
     resume_text = data.get("resume_text", "")
     previous = data.get("previous", [])
 
-    avoid = "\n\nDo NOT ask these questions again:\n" + "\n".join(previous) if previous else ""
-
     if resume_text:
         resume_section = f"\nCandidate Resume:\n{resume_text[:2000]}\nAsk about their specific projects and skills."
     else:
@@ -55,16 +58,48 @@ def get_next_question(data: dict):
     if interview_type == "Technical":
         type_instruction = "Ask a technical question — DSA, system design, coding, or domain knowledge."
     elif interview_type == "HR":
-        type_instruction = "Ask an HR or behavioral question — strengths, weaknesses, situational, career goals, tell me about yourself."
+        type_instruction = "Ask an HR or behavioral question — strengths, weaknesses, situational, career goals."
     else:
-        type_instruction = "Ask either a technical OR behavioral/HR question — mix them naturally like a real interview."
+        type_instruction = "Ask either a technical OR behavioral/HR question — mix naturally."
 
-    prompt = f"""You are a professional interviewer for a {job_role} role ({difficulty} level).
+    # Only block the most recent 3 questions — allow older ones to occasionally reappear
+    recent_to_avoid = previous[-3:] if len(previous) >= 3 else previous
+    avoid = "\n\nDo NOT ask these exact questions:\n" + "\n".join(recent_to_avoid) if recent_to_avoid else ""
+
+    # Optionally revisit an older question concept (rephrased)
+    revisit_hint = ""
+    if previous and len(previous) > 4:
+        older_questions = previous[:-3]
+        revisit_q = random.choice(older_questions)
+        revisit_hint = f"\nYou MAY optionally revisit this concept with fresh wording (not exact): '{revisit_q}'\nOr ask something completely new. Mix it up."
+
+    random_styles = [
+        "Ask a scenario-based practical question",
+        "Ask about a real-world problem the candidate might face",
+        "Ask about a common mistake developers make and how to avoid it",
+        "Ask about best practices and the reasoning behind them",
+        "Ask about comparing two different approaches or technologies",
+        "Ask about debugging or troubleshooting a specific issue",
+        "Ask about performance optimization",
+        "Ask about a past project or experience",
+        "Ask about architecture or design decisions",
+        "Ask about testing and code quality",
+    ]
+
+    prompt = f"""You are a professional interviewer conducting a {difficulty} level interview for a {job_role} role.
 {type_instruction}
 {resume_section}
 {avoid}
+{revisit_hint}
 
-Generate exactly ONE interview question. Return ONLY the question, nothing else. No numbering, no explanation, no preamble."""
+Question style for this turn: {random.choice(random_styles)}
+Session token: {random.randint(10000, 99999)}
+
+Rules:
+- Never repeat the exact questions listed in the avoid section
+- Make every question feel fresh and unpredictable
+- Vary the topic, style, and phrasing from previous questions
+- Return ONLY the question. No numbering, no explanation, no preamble."""
 
     response = llm.invoke(prompt)
     return {"question": response.content.strip()}
