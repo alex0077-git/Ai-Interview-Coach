@@ -52,6 +52,12 @@ Built using **LangChain**, **Groq LLM (LLaMA 3.3 70B)**, **FastAPI**, and **Reac
 * Track interview performance across multiple sessions.
 * Visual score trends and performance analytics.
 
+### 💾 Smart History Tracking
+* Caches previously asked questions locally using `localStorage` across sessions.
+   
+### 🔀 Random Question Variety 
+* Filters historical data into the LLM prompt context to guarantee high random variety and prevent repetitive questions.
+
 ### 🔥 LLM-Powered Experience
 * Uses Groq-hosted LLaMA models for lightning-fast inference.
 * LangChain orchestration for prompt management and response generation.
@@ -100,6 +106,7 @@ User → React Frontend → FastAPI Backend → LangChain → Groq LLM
 7. Once the final answer is completed, the interview ends and detailed feedback is generated.
 
 ---
+
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
