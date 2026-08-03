@@ -7,6 +7,7 @@ function App() {
   const [duration, setDuration] = useState(10);
   const [resumeText, setResumeText] = useState("");
   const [resumeName, setResumeName] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentTranscript, setCurrentTranscript] = useState("");
   const [allQA, setAllQA] = useState([]);
@@ -69,7 +70,14 @@ function App() {
     const res = await fetch("http://127.0.0.1:8000/get-next-question", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_role: jobRole, difficulty, interview_type: interviewType, resume_text: resumeText, previous: prevQs }),
+      body: JSON.stringify({
+        job_role: jobRole,
+        difficulty,
+        interview_type: interviewType,
+        resume_text: resumeText,
+        previous: prevQs,
+        job_description: jobDescription,
+      }),
     });
     const data = await res.json();
     return data.question;
@@ -104,7 +112,6 @@ function App() {
     setResults(null);
     setQuestionNum(0);
 
-    // Load previous questions from localStorage
     try {
       const saved = localStorage.getItem(getStorageKey(jobRole));
       const savedPrev = saved ? JSON.parse(saved) : [];
@@ -183,7 +190,6 @@ function App() {
     const newPrevQs = [...previousQuestions, currentQuestion];
     setPreviousQuestions(newPrevQs);
 
-    // Save to localStorage
     try { localStorage.setItem(getStorageKey(jobRole), JSON.stringify(newPrevQs)); } catch { }
 
     setCurrentTranscript("");
@@ -220,6 +226,7 @@ function App() {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     setJobRole(""); setCurrentQuestion(""); setAllQA([]); setPreviousQuestions([]);
     setCurrentTranscript(""); setResults(null); setResumeText(""); setResumeName("");
+    setJobDescription("");
     setListening(false); setSpeaking(false); setAiStatus(""); setTimeLeft(0);
     setTimeExpired(false); setQuestionNum(0); setStage("setup");
   };
@@ -312,6 +319,20 @@ function App() {
                 <div><div style={{ color: "#64748b", fontSize: "24px" }}>📄</div><div style={{ color: "#64748b", fontSize: "13px" }}>Click to upload resume PDF</div></div>
               )}
             </div>
+
+            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Job Description (optional — for targeted questions)</p>
+            <textarea
+              placeholder="Paste the job description here... (required skills, responsibilities, qualifications)"
+              value={jobDescription}
+              onChange={(e) => setJobDescription(e.target.value)}
+              rows={5}
+              style={{ width: "100%", padding: "12px", borderRadius: "10px", border: jobDescription ? "1px solid #6366f1" : "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "14px", marginBottom: "20px", boxSizing: "border-box", resize: "vertical" }}
+            />
+            {jobDescription && (
+              <p style={{ color: "#6366f1", fontSize: "11px", marginTop: "-14px", marginBottom: "16px" }}>
+                ✅ JD added — questions will target this specific role
+              </p>
+            )}
 
             <button onClick={startInterview} disabled={!jobRole || loading}
               style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "none", background: !jobRole ? "#334155" : "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: !jobRole ? "not-allowed" : "pointer" }}>

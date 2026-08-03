@@ -61,6 +61,13 @@ def get_next_question(data: dict):
         type_instruction = "Ask an HR or behavioral question — strengths, weaknesses, situational, career goals."
     else:
         type_instruction = "Ask either a technical OR behavioral/HR question — mix naturally."
+    job_description = data.get("job_description", "")
+
+    # Add after resume_section
+    if job_description:
+        jd_section = f"\nJob Description:\n{job_description[:1500]}\nGenerate questions that specifically target the skills and requirements mentioned in this job description."
+    else:
+        jd_section = ""
 
     # Only block the most recent 3 questions — allow older ones to occasionally reappear
     recent_to_avoid = previous[-3:] if len(previous) >= 3 else previous
