@@ -1,6 +1,204 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
-function App() {
+const COLORS = {
+  bg: "#080B14",
+  surface: "#0F1628",
+  card: "#141B2D",
+  border: "#1E2D4A",
+  primary: "#6C63FF",
+  primaryGlow: "rgba(108, 99, 255, 0.3)",
+  secondary: "#FF6584",
+  accent: "#00D4FF",
+  accentGlow: "rgba(0, 212, 255, 0.2)",
+  success: "#00E5A0",
+  successGlow: "rgba(0, 229, 160, 0.2)",
+  warning: "#FFB347",
+  danger: "#FF4757",
+  text: "#E8EEFF",
+  textMuted: "#5B6B8A",
+  textSub: "#8899BB",
+};
+
+const css = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: ${COLORS.bg};
+    font-family: 'Inter', sans-serif;
+    color: ${COLORS.text};
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.15); opacity: 0.4; }
+    100% { transform: scale(1); opacity: 0.8; }
+  }
+
+  @keyframes pulse-ring2 {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 0.1; }
+    100% { transform: scale(1); opacity: 0.5; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes barDance {
+    0%, 100% { height: 8px; }
+    50% { height: 28px; }
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { box-shadow: 0 0 20px ${COLORS.primaryGlow}; }
+    50% { box-shadow: 0 0 40px ${COLORS.primaryGlow}, 0 0 80px rgba(108,99,255,0.1); }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes timerWarning {
+    0%, 100% { color: ${COLORS.warning}; }
+    50% { color: #FF8C00; }
+  }
+
+  .fade-up { animation: fadeSlideUp 0.4s ease forwards; }
+
+  .btn-primary {
+    background: linear-gradient(135deg, ${COLORS.primary}, #8B5CF6);
+    border: none;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px ${COLORS.primaryGlow};
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-success {
+    background: linear-gradient(135deg, ${COLORS.success}, #00B894);
+    border: none; color: #000;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-success:hover { transform: translateY(-2px); box-shadow: 0 8px 30px ${COLORS.successGlow}; }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid ${COLORS.border};
+    color: ${COLORS.textSub};
+    font-family: 'Inter', sans-serif;
+    font-weight: 500; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-ghost:hover { border-color: ${COLORS.primary}; color: ${COLORS.primary}; }
+
+  .card {
+    background: ${COLORS.card};
+    border: 1px solid ${COLORS.border};
+    border-radius: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .chip {
+    display: inline-flex; align-items: center;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+
+  input, textarea {
+    background: ${COLORS.surface};
+    border: 1px solid ${COLORS.border};
+    color: ${COLORS.text};
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+  input:focus, textarea:focus {
+    border-color: ${COLORS.primary};
+    box-shadow: 0 0 0 3px ${COLORS.primaryGlow};
+  }
+  input::placeholder, textarea::placeholder { color: ${COLORS.textMuted}; }
+
+  .progress-bar {
+    height: 3px;
+    background: ${COLORS.border};
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  .sound-bar {
+    width: 4px;
+    border-radius: 4px;
+    background: ${COLORS.accent};
+    animation: barDance 0.8s ease-in-out infinite;
+  }
+
+  .toggle-group {
+    display: flex;
+    background: ${COLORS.surface};
+    border: 1px solid ${COLORS.border};
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .toggle-btn {
+    flex: 1; padding: 10px;
+    border: none; border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: ${COLORS.textSub};
+  }
+  .toggle-btn.active {
+    background: ${COLORS.card};
+    color: ${COLORS.text};
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .session-bar {
+    display: flex; align-items: center;
+    gap: 8px; padding: 8px 0;
+    border-bottom: 1px solid ${COLORS.border};
+  }
+  .session-bar:last-child { border-bottom: none; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: ${COLORS.surface}; }
+  ::-webkit-scrollbar-thumb { background: ${COLORS.border}; border-radius: 3px; }
+`;
+
+export default function App() {
   const [jobRole, setJobRole] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
   const [interviewType, setInterviewType] = useState("Mixed");
@@ -25,6 +223,7 @@ function App() {
   const [showContinueOptions, setShowContinueOptions] = useState(false);
   const [continueDifficulty, setContinueDifficulty] = useState("");
   const [continueDuration, setContinueDuration] = useState(0);
+  const [dragOver, setDragOver] = useState(false);
 
   const fileRef = useRef();
   const recognitionRef = useRef(null);
@@ -38,12 +237,13 @@ function App() {
   const durations = [5, 10, 15, 20];
   const getStorageKey = (role) => `prev_questions_${role.toLowerCase().replace(/\s/g, "_")}`;
 
+  const diffColor = (d) => d === "Easy" ? COLORS.success : d === "Medium" ? COLORS.warning : COLORS.danger;
+  const diffGlow = (d) => d === "Easy" ? COLORS.successGlow : d === "Medium" ? "rgba(255,179,71,0.2)" : "rgba(255,71,87,0.2)";
+
   const speakText = (text, onDone) => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
+    utterance.lang = "en-US"; utterance.rate = 0.9; utterance.pitch = 1;
     utterance.onstart = () => setSpeaking(true);
     utterance.onend = () => { setSpeaking(false); if (onDone) onDone(); };
     utterance.onerror = () => { setSpeaking(false); if (onDone) onDone(); };
@@ -51,50 +251,36 @@ function App() {
   };
 
   const startTimer = (mins) => {
-    const totalSeconds = mins * 60;
-    setTimeLeft(totalSeconds);
-    timeLeftRef.current = totalSeconds;
-    timeExpiredRef.current = false;
-    setTimeExpired(false);
+    const total = mins * 60;
+    setTimeLeft(total); timeLeftRef.current = total;
+    timeExpiredRef.current = false; setTimeExpired(false);
     timerRef.current = setInterval(() => {
       timeLeftRef.current -= 1;
       setTimeLeft(timeLeftRef.current);
       if (timeLeftRef.current <= 0) {
         clearInterval(timerRef.current);
-        timeExpiredRef.current = true;
-        setTimeExpired(true);
+        timeExpiredRef.current = true; setTimeExpired(true);
       }
     }, 1000);
   };
 
   const stopTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
 
-  const fetchNextQuestion = async (prevQs, diffOverride, roleOverride) => {
+  const fetchNextQuestion = async (prevQs, diffOverride) => {
     const res = await fetch("http://127.0.0.1:8000/get-next-question", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        job_role: roleOverride || jobRole,
-        difficulty: diffOverride || difficulty,
-        interview_type: interviewType,
-        resume_text: resumeText,
-        previous: prevQs,
-        job_description: jobDescription,
-      }),
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_role: jobRole, difficulty: diffOverride || difficulty, interview_type: interviewType, resume_text: resumeText, previous: prevQs, job_description: jobDescription }),
     });
-    const data = await res.json();
-    return data.question;
+    return (await res.json()).question;
   };
 
   const askNextQuestion = async (prevQs, qNum, diffOverride) => {
-    setAiStatus("AI is thinking of next question...");
+    setAiStatus("Crafting your next question...");
     const question = await fetchNextQuestion(prevQs, diffOverride);
-    setCurrentQuestion(question);
-    setQuestionNum(qNum);
-    setCurrentTranscript("");
-    transcriptRef.current = "";
-    setAiStatus("AI is asking question...");
-    speakText(question, () => { setAiStatus("Your turn — click Speak to answer"); });
+    setCurrentQuestion(question); setQuestionNum(qNum);
+    setCurrentTranscript(""); transcriptRef.current = "";
+    setAiStatus("Listen carefully...");
+    speakText(question, () => setAiStatus("Your turn — tap the mic to answer"));
   };
 
   const uploadResume = async (file) => {
@@ -102,139 +288,92 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
     const res = await fetch("http://127.0.0.1:8000/upload-resume", { method: "POST", body: formData });
-    const data = await res.json();
-    setResumeText(data.resume_text);
+    setResumeText((await res.json()).resume_text);
   };
 
   const startInterview = async (diffOverride, durOverride) => {
     const activeDiff = diffOverride || difficulty;
     const activeDur = durOverride || duration;
     if (!jobRole) return;
-    setLoading(true);
-    setAllQA([]);
-    setCurrentQuestion("");
-    setCurrentTranscript("");
-    setResults(null);
-    setQuestionNum(0);
-    setShowContinueOptions(false);
-
+    setLoading(true); setAllQA([]); setCurrentQuestion(""); setCurrentTranscript("");
+    setResults(null); setQuestionNum(0); setShowContinueOptions(false);
     try {
       const saved = localStorage.getItem(getStorageKey(jobRole));
-      const savedPrev = saved ? JSON.parse(saved) : [];
-      setPreviousQuestions(savedPrev);
+      setPreviousQuestions(saved ? JSON.parse(saved) : []);
     } catch { setPreviousQuestions([]); }
-
-    setStage("interview");
-    setLoading(false);
-
-    const greeting = `Hi, welcome back! This will be a ${activeDur}-minute ${interviewType} interview for the ${jobRole} role at ${activeDiff} level. Let's begin!`;
-    setAiStatus("AI Interviewer is greeting you...");
+    setStage("interview"); setLoading(false);
+    const greeting = `Welcome! I'm your AI interviewer today. We'll be doing a ${activeDur}-minute ${activeDiff} level ${interviewType} interview for the ${jobRole} role. Take a breath, and let's get started!`;
+    setAiStatus("Your interviewer is ready...");
     speakText(greeting, async () => {
       startTimer(activeDur);
       const saved = localStorage.getItem(getStorageKey(jobRole));
-      const savedPrev = saved ? JSON.parse(saved) : [];
-      await askNextQuestion(savedPrev, 1, activeDiff);
+      await askNextQuestion(saved ? JSON.parse(saved) : [], 1, activeDiff);
     });
-  };
-
-  const continueInterview = () => {
-    setContinueDifficulty(difficulty);
-    setContinueDuration(duration);
-    setShowContinueOptions(true);
   };
 
   const startListening = () => {
     if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
-      alert("Please use Chrome browser for speech recognition.");
-      return;
+      alert("Please use Chrome browser."); return;
     }
-    window.speechSynthesis.cancel();
-    setSpeaking(false);
-    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-    let finalTranscript = "";
-    let isEnded = false;
-
-    const createRecognition = () => {
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.onstart = () => { setListening(true); setAiStatus("Listening... speak your answer"); };
-      recognition.onresult = (event) => {
+    window.speechSynthesis.cancel(); setSpeaking(false);
+    const SR = window.webkitSpeechRecognition || window.SpeechRecognition;
+    let finalT = ""; let isEnded = false;
+    const create = () => {
+      const r = new SR();
+      r.lang = "en-US"; r.continuous = true; r.interimResults = true;
+      r.onstart = () => { setListening(true); setAiStatus("Listening... speak freely"); };
+      r.onresult = (e) => {
         let interim = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
-          else interim += event.results[i][0].transcript;
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) finalT += e.results[i][0].transcript + " ";
+          else interim += e.results[i][0].transcript;
         }
-        transcriptRef.current = finalTranscript;
-        setCurrentTranscript(finalTranscript + interim);
+        transcriptRef.current = finalT;
+        setCurrentTranscript(finalT + interim);
       };
-      recognition.onend = () => {
-        if (!isEnded) {
-          try { recognition.start(); } catch (e) {
-            const newRec = createRecognition();
-            recognitionRef.current = { stop: () => { isEnded = true; newRec.stop(); } };
-            newRec.start();
-          }
-        }
+      r.onend = () => { if (!isEnded) { try { r.start(); } catch { const nr = create(); recognitionRef.current = { stop: () => { isEnded = true; nr.stop(); } }; nr.start(); } } };
+      r.onerror = (e) => {
+        if (e.error === "no-speech" || e.error === "audio-capture") { if (!isEnded) { try { r.start(); } catch {} } }
+        else { setListening(false); setAiStatus("Your turn — tap the mic to answer"); }
       };
-      recognition.onerror = (event) => {
-        if (event.error === "no-speech" || event.error === "audio-capture") {
-          if (!isEnded) { try { recognition.start(); } catch (e) { } }
-        } else { setListening(false); setAiStatus("Your turn — click Speak to answer"); }
-      };
-      return recognition;
+      return r;
     };
-
-    const recognition = createRecognition();
-    recognitionRef.current = { stop: () => { isEnded = true; recognition.stop(); } };
-    recognition.start();
+    const rec = create();
+    recognitionRef.current = { stop: () => { isEnded = true; rec.stop(); } };
+    rec.start();
   };
 
   const endAnswer = async () => {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     setListening(false);
     const answer = transcriptRef.current.trim() || currentTranscript.trim();
-    if (!answer) { setAiStatus("No answer detected. Please try again."); return; }
-
+    if (!answer) { setAiStatus("Nothing detected — try again"); return; }
     const newQA = [...allQA, { question: currentQuestion, answer }];
     setAllQA(newQA);
-    const newPrevQs = [...previousQuestions, currentQuestion];
-    setPreviousQuestions(newPrevQs);
-
-    try { localStorage.setItem(getStorageKey(jobRole), JSON.stringify(newPrevQs)); } catch { }
-
-    setCurrentTranscript("");
-    transcriptRef.current = "";
-
+    const newPrev = [...previousQuestions, currentQuestion];
+    setPreviousQuestions(newPrev);
+    try { localStorage.setItem(getStorageKey(jobRole), JSON.stringify(newPrev)); } catch {}
+    setCurrentTranscript(""); transcriptRef.current = "";
     if (timeExpiredRef.current) {
-      setAiStatus("Interview complete! Evaluating your answers...");
-      stopTimer();
-      await evaluateAll(newQA);
-    } else {
-      await askNextQuestion(newPrevQs, questionNum + 1);
-    }
+      setAiStatus("Wrapping up your interview...");
+      stopTimer(); await evaluateAll(newQA);
+    } else { await askNextQuestion(newPrev, questionNum + 1); }
   };
 
   const evaluateAll = async (qaList) => {
-    setLoading(true);
-    setStage("evaluating");
-    const qa_pairs = qaList.map(qa => ({ question: qa.question, answer: qa.answer }));
+    setLoading(true); setStage("evaluating");
     const res = await fetch("http://127.0.0.1:8000/evaluate-all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job_role: jobRole, qa_pairs, difficulty }),
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_role: jobRole, qa_pairs: qaList.map(q => ({ question: q.question, answer: q.answer })), difficulty }),
     });
     const data = await res.json();
     setResults(data);
     setSessionHistory(prev => [...prev, { role: jobRole, difficulty, type: interviewType, duration, total: data.total_score, max: data.max_score, questions: qaList.length }]);
-    setStage("results");
-    setLoading(false);
+    setStage("results"); setLoading(false);
   };
 
   const restart = () => {
-    window.speechSynthesis.cancel();
-    stopTimer();
+    window.speechSynthesis.cancel(); stopTimer();
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     setJobRole(""); setCurrentQuestion(""); setAllQA([]); setPreviousQuestions([]);
     setCurrentTranscript(""); setResults(null); setResumeText(""); setResumeName("");
@@ -244,286 +383,372 @@ function App() {
   };
 
   const fullReset = () => { restart(); setSessionHistory([]); };
-  const formatTime = (secs) => `${Math.floor(secs / 60).toString().padStart(2, "0")}:${(secs % 60).toString().padStart(2, "0")}`;
-  const scoreColor = (s) => s >= 7 ? "#10b981" : s >= 4 ? "#f59e0b" : "#ef4444";
-  const scoreLabel = (s) => s >= 7 ? "Great!" : s >= 4 ? "Okay" : "Needs work";
+  const fmt = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
+  const scoreColor = (s) => s >= 7 ? COLORS.success : s >= 4 ? COLORS.warning : COLORS.danger;
+  const scoreGlow = (s) => s >= 7 ? COLORS.successGlow : s >= 4 ? "rgba(255,179,71,0.2)" : "rgba(255,71,87,0.2)";
   const pct = (s, m) => Math.round((s / m) * 100);
+  const scoreLabel = (s) => s >= 7 ? "Excellent" : s >= 4 ? "Good" : "Needs Work";
+
+  const timerColor = timeExpired ? COLORS.danger : timeLeft <= 60 ? COLORS.warning : COLORS.success;
+  const timerPct = (timeLeft / (duration * 60)) * 100;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0f172a", color: "#e2e8f0", fontFamily: "Inter, sans-serif", padding: "30px 20px" }}>
-      <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+    <>
+      <style>{css}</style>
+      <div style={{ minHeight: "100vh", background: `radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.05) 0%, transparent 50%), ${COLORS.bg}`, padding: "24px 20px" }}>
+        <div style={{ maxWidth: "680px", margin: "0 auto" }}>
 
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#6366f1", margin: 0 }}>AI Interview Coach</h1>
-          <p style={{ color: "#94a3b8", marginTop: "8px" }}>Practice. Improve. Get hired.</p>
-        </div>
-
-        {sessionHistory.length > 0 && (
-          <div style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ color: "#e2e8f0", margin: 0, fontSize: "15px" }}>Session Progress</h3>
-              <button onClick={fullReset} style={{ padding: "5px 12px", borderRadius: "8px", border: "1px solid #334155", background: "transparent", color: "#64748b", fontSize: "12px", cursor: "pointer" }}>Reset All</button>
+          {/* HEADER */}
+          <div style={{ textAlign: "center", marginBottom: "40px", animation: "fadeSlideUp 0.5s ease" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+              <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: `linear-gradient(135deg, ${COLORS.primary}, #8B5CF6)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px", boxShadow: `0 4px 20px ${COLORS.primaryGlow}` }}>🎙️</div>
+              <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "26px", fontWeight: "700", background: `linear-gradient(135deg, ${COLORS.text}, ${COLORS.primary})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                Interview Coach
+              </h1>
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "60px" }}>
-              {sessionHistory.map((s, i) => (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "10px", color: "#64748b" }}>{pct(s.total, s.max)}%</span>
-                  <div style={{ width: "100%", borderRadius: "4px 4px 0 0", height: `${pct(s.total, s.max) * 0.5}px`, background: pct(s.total, s.max) >= 70 ? "#10b981" : pct(s.total, s.max) >= 50 ? "#f59e0b" : "#ef4444", minHeight: "4px" }} />
-                  <span style={{ fontSize: "9px", color: "#64748b" }}>#{i + 1}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: "10px" }}>
-              {sessionHistory.map((s, i) => (
-                <div key={i} style={{ fontSize: "11px", color: "#64748b", marginTop: "4px" }}>
-                  #{i + 1} {s.role} · {s.type} · {s.difficulty} · {s.duration}min · {s.questions}q — {s.total}/{s.max}
-                </div>
-              ))}
-            </div>
+            <p style={{ color: COLORS.textMuted, fontSize: "14px", letterSpacing: "0.05em" }}>AI-POWERED VOICE INTERVIEW SIMULATOR</p>
           </div>
-        )}
 
-        {/* SETUP */}
-        {stage === "setup" && (
-          <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px" }}>
-            <h2 style={{ color: "#e2e8f0", margin: "0 0 24px", fontSize: "18px" }}>Start your mock interview</h2>
-
-            <input placeholder="Enter job role (e.g. AI Engineer, Software Engineer)" value={jobRole}
-              onChange={(e) => setJobRole(e.target.value)} onKeyDown={(e) => e.key === "Enter" && startInterview()}
-              style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "15px", marginBottom: "20px", boxSizing: "border-box" }} />
-
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Interview Type</p>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-              {interviewTypes.map(t => (
-                <button key={t} onClick={() => setInterviewType(t)}
-                  style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: interviewType === t ? "#6366f1" : "#334155", color: interviewType === t ? "white" : "#94a3b8" }}>
-                  {t === "Technical" ? "💻 Technical" : t === "HR" ? "🤝 HR" : "🎯 Mixed"}
-                </button>
-              ))}
-            </div>
-
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Difficulty</p>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-              {difficulties.map(d => (
-                <button key={d} onClick={() => setDifficulty(d)}
-                  style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "600", background: difficulty === d ? (d === "Easy" ? "#10b981" : d === "Medium" ? "#f59e0b" : "#ef4444") : "#334155", color: difficulty === d ? "white" : "#94a3b8" }}>
-                  {d}
-                </button>
-              ))}
-            </div>
-
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Interview Duration</p>
-            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-              {durations.map(d => (
-                <button key={d} onClick={() => setDuration(d)}
-                  style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "14px", fontWeight: "600", background: duration === d ? "#6366f1" : "#334155", color: duration === d ? "white" : "#94a3b8" }}>
-                  {d} min
-                </button>
-              ))}
-            </div>
-
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Resume (optional — for personalized questions)</p>
-            <div onClick={() => fileRef.current.click()}
-              style={{ border: "2px dashed #334155", borderRadius: "10px", padding: "20px", textAlign: "center", cursor: "pointer", marginBottom: "20px", background: resumeText ? "#0f2a1a" : "transparent", borderColor: resumeText ? "#10b981" : "#334155" }}>
-              <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => e.target.files[0] && uploadResume(e.target.files[0])} />
-              {resumeText ? (
-                <div><div style={{ color: "#10b981" }}>✅ {resumeName}</div><div style={{ color: "#64748b", fontSize: "11px" }}>Personalized questions enabled</div></div>
-              ) : (
-                <div><div style={{ color: "#64748b", fontSize: "24px" }}>📄</div><div style={{ color: "#64748b", fontSize: "13px" }}>Click to upload resume PDF</div></div>
-              )}
-            </div>
-
-            <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Job Description (optional — for targeted questions)</p>
-            <textarea
-              placeholder="Paste the job description here... (required skills, responsibilities, qualifications)"
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              rows={5}
-              style={{ width: "100%", padding: "12px", borderRadius: "10px", border: jobDescription ? "1px solid #6366f1" : "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "14px", marginBottom: jobDescription ? "8px" : "20px", boxSizing: "border-box", resize: "vertical" }}
-            />
-            {jobDescription && (
-              <p style={{ color: "#6366f1", fontSize: "11px", marginBottom: "16px" }}>✅ JD added — questions will target this specific role</p>
-            )}
-
-            <button onClick={() => startInterview()} disabled={!jobRole || loading}
-              style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "none", background: !jobRole ? "#334155" : "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: !jobRole ? "not-allowed" : "pointer" }}>
-              {loading ? "Preparing interview..." : `Start ${duration}-Minute Interview →`}
-            </button>
-          </div>
-        )}
-
-        {/* INTERVIEW */}
-        {stage === "interview" && (
-          <div>
-            <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "#94a3b8", fontSize: "13px" }}>{jobRole} · {interviewType} · {difficulty}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "20px", fontWeight: "700", color: timeExpired ? "#ef4444" : timeLeft <= 60 ? "#f59e0b" : "#10b981", fontFamily: "monospace" }}>
-                  {formatTime(timeLeft)}
-                </span>
-                {timeExpired && <span style={{ fontSize: "11px", color: "#ef4444" }}>Finish your answer!</span>}
-              </div>
-            </div>
-
-            <div style={{ background: "#334155", borderRadius: "4px", height: "4px", marginBottom: "20px" }}>
-              <div style={{ background: timeExpired ? "#ef4444" : timeLeft <= 60 ? "#f59e0b" : "#6366f1", borderRadius: "4px", height: "4px", width: `${(timeLeft / (duration * 60)) * 100}%`, transition: "width 1s linear" }} />
-            </div>
-
-            <div style={{ background: "#1e293b", borderRadius: "16px", padding: "40px 24px", textAlign: "center", marginBottom: "20px" }}>
-              <div style={{ width: "90px", height: "90px", borderRadius: "50%", background: speaking ? "#1e3a5f" : listening ? "#064e3b" : "#1e293b", border: `3px solid ${speaking ? "#3b82f6" : listening ? "#10b981" : "#334155"}`, margin: "0 auto 20px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "40px", transition: "all 0.3s" }}>
-                {speaking ? "🎙️" : listening ? "👂" : "🤖"}
-              </div>
-              <div style={{ fontSize: "16px", color: speaking ? "#93c5fd" : listening ? "#6ee7b7" : "#94a3b8", fontWeight: "500", marginBottom: "6px" }}>
-                {speaking ? "AI Interviewer is speaking..." : listening ? "Listening to your answer..." : aiStatus}
-              </div>
-              {questionNum > 0 && (
-                <div style={{ fontSize: "12px", color: "#475569", marginTop: "4px" }}>
-                  Question {questionNum} · {allQA.length} answered so far
-                </div>
-              )}
-            </div>
-
-            {(listening || currentTranscript) && (
-              <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "20px" }}>
-                <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 8px" }}>Your answer (transcript):</p>
-                <p style={{ color: "#e2e8f0", fontSize: "14px", margin: 0, lineHeight: "1.6", minHeight: "40px" }}>
-                  {currentTranscript || <span style={{ color: "#475569" }}>Start speaking...</span>}
-                </p>
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: "12px" }}>
-              {!listening ? (
-                <button onClick={startListening} disabled={speaking || loading}
-                  style={{ flex: 1, padding: "18px", borderRadius: "12px", border: "none", background: speaking || loading ? "#334155" : "#6366f1", color: "white", fontSize: "16px", fontWeight: "700", cursor: speaking || loading ? "not-allowed" : "pointer" }}>
-                  🎤 Speak Answer
-                </button>
-              ) : (
-                <button onClick={endAnswer}
-                  style={{ flex: 1, padding: "18px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontSize: "16px", fontWeight: "700", cursor: "pointer" }}>
-                  ✅ End Answer
-                </button>
-              )}
-              <button onClick={restart}
-                style={{ padding: "18px 20px", borderRadius: "12px", border: "1px solid #334155", background: "transparent", color: "#64748b", fontSize: "14px", cursor: "pointer" }}>
-                Exit
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* EVALUATING */}
-        {stage === "evaluating" && (
-          <div style={{ background: "#1e293b", borderRadius: "16px", padding: "60px 24px", textAlign: "center" }}>
-            <div style={{ fontSize: "48px", marginBottom: "20px" }}>🤖</div>
-            <h2 style={{ color: "#e2e8f0", margin: "0 0 12px" }}>Evaluating your interview...</h2>
-            <p style={{ color: "#94a3b8", margin: 0 }}>Analysing {allQA.length} answers. Please wait.</p>
-          </div>
-        )}
-
-        {/* RESULTS */}
-        {stage === "results" && results && (
-          <div>
-            <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
-              <p style={{ color: "#94a3b8", margin: "0 0 8px", fontSize: "14px" }}>Interview Complete — {duration} minutes · {results.results.length} questions</p>
-              <div style={{ fontSize: "56px", fontWeight: "700", color: scoreColor((results.total_score / results.max_score) * 10) }}>
-                {results.total_score}/{results.max_score}
-              </div>
-              <div style={{ marginTop: "8px", fontSize: "14px", color: "#94a3b8" }}>
-                {pct(results.total_score, results.max_score)}% · {interviewType} · {difficulty}
-              </div>
-              <p style={{ color: "#94a3b8", margin: "8px 0 0", fontSize: "14px" }}>
-                {results.total_score >= results.max_score * 0.7 ? "Excellent! You're interview ready!" :
-                  results.total_score >= results.max_score * 0.5 ? "Good performance. Keep practicing!" : "Keep practicing. You'll get there!"}
-              </p>
-            </div>
-
-            {/* Continue Interview Options */}
-            {showContinueOptions && (
-              <div style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "20px", border: "1px solid #6366f1" }}>
-                <h3 style={{ color: "#e2e8f0", margin: "0 0 8px", fontSize: "16px" }}>Continue Interview</h3>
-                <p style={{ color: "#64748b", fontSize: "13px", margin: "0 0 16px" }}>
-                  Same role ({jobRole}) · Same resume · Same JD. Change difficulty or duration if needed.
-                </p>
-
-                <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Difficulty</p>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-                  {difficulties.map(d => (
-                    <button key={d} onClick={() => setContinueDifficulty(d)}
-                      style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: continueDifficulty === d ? (d === "Easy" ? "#10b981" : d === "Medium" ? "#f59e0b" : "#ef4444") : "#334155", color: continueDifficulty === d ? "white" : "#94a3b8" }}>
-                      {d}
-                    </button>
-                  ))}
-                </div>
-
-                <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Duration</p>
-                <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
-                  {durations.map(d => (
-                    <button key={d} onClick={() => setContinueDuration(d)}
-                      style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: continueDuration === d ? "#6366f1" : "#334155", color: continueDuration === d ? "white" : "#94a3b8" }}>
-                      {d} min
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    onClick={() => {
-                      setDifficulty(continueDifficulty);
-                      setDuration(continueDuration);
-                      startInterview(continueDifficulty, continueDuration);
-                    }}
-                    disabled={!continueDifficulty || !continueDuration}
-                    style={{ flex: 1, padding: "13px", borderRadius: "10px", border: "none", background: !continueDifficulty || !continueDuration ? "#334155" : "#6366f1", color: "white", fontSize: "14px", fontWeight: "600", cursor: !continueDifficulty || !continueDuration ? "not-allowed" : "pointer" }}>
-                    🚀 Start Continue Interview
-                  </button>
-                  <button onClick={() => setShowContinueOptions(false)}
-                    style={{ padding: "13px 16px", borderRadius: "10px", border: "1px solid #334155", background: "transparent", color: "#64748b", fontSize: "14px", cursor: "pointer" }}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {results.results.map((r, i) => (
-              <div key={i} style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", flex: 1 }}>
-                    <span style={{ background: "#6366f1", color: "white", borderRadius: "50%", width: "28px", height: "28px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "700", flexShrink: 0 }}>{i + 1}</span>
-                    <p style={{ color: "#e2e8f0", margin: 0, fontSize: "14px", lineHeight: "1.6" }}>{r.question}</p>
-                  </div>
-                  <div style={{ textAlign: "center", marginLeft: "16px", flexShrink: 0 }}>
-                    <div style={{ fontSize: "24px", fontWeight: "700", color: scoreColor(r.score) }}>{r.score}/10</div>
-                    <div style={{ fontSize: "11px", color: scoreColor(r.score) }}>{scoreLabel(r.score)}</div>
-                  </div>
-                </div>
-                <div style={{ background: "#0f172a", borderRadius: "8px", padding: "12px", marginBottom: "10px" }}>
-                  <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 4px" }}>Your answer:</p>
-                  <p style={{ color: "#94a3b8", fontSize: "13px", margin: 0, lineHeight: "1.6" }}>{r.answer}</p>
-                </div>
-                <pre style={{ whiteSpace: "pre-wrap", color: "#cbd5e1", fontSize: "13px", lineHeight: "1.7", margin: 0, background: "#0f172a", padding: "12px", borderRadius: "8px" }}>{r.feedback}</pre>
-              </div>
-            ))}
-
-            {/* Bottom buttons */}
-            {!showContinueOptions && (
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
-                <button onClick={continueInterview}
-                  style={{ flex: 1, padding: "14px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontSize: "15px", fontWeight: "600", cursor: "pointer" }}>
-                  ▶ Continue Interview
-                </button>
-                <button onClick={restart}
-                  style={{ flex: 1, padding: "14px", borderRadius: "12px", border: "1px solid #334155", background: "transparent", color: "#94a3b8", fontSize: "15px", fontWeight: "600", cursor: "pointer" }}>
-                  Start New Interview
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-      </div>
+          {/* SESSION HISTORY */}
+          {sessionHistory.length > 0 && (
+  <div className="card fade-up" style={{ marginBottom: "20px", overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${COLORS.border}` }}>
+      <span style={{ fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em" }}>SESSION HISTORY</span>
+      <button onClick={fullReset} className="btn-ghost" style={{ padding: "4px 10px", borderRadius: "6px", fontSize: "11px" }}>Clear</button>
     </div>
+
+    {/* Table header */}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 70px 60px 60px", padding: "10px 20px", borderBottom: `1px solid ${COLORS.border}`, gap: "8px" }}>
+      {["ROLE", "TYPE", "LEVEL", "TIME", "SCORE"].map(h => (
+        <span key={h} style={{ fontSize: "10px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em" }}>{h}</span>
+      ))}
+    </div>
+
+    {/* Table rows */}
+    {sessionHistory.map((s, i) => {
+      const p = pct(s.total, s.max);
+      const sc = scoreColor(p / 10);
+      return (
+        <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 80px 70px 60px 60px", padding: "12px 20px", borderBottom: i < sessionHistory.length - 1 ? `1px solid ${COLORS.border}` : "none", gap: "8px", alignItems: "center", transition: "background 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.background = COLORS.surface}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+          <div>
+            <div style={{ fontSize: "13px", fontWeight: "600", color: COLORS.text, marginBottom: "2px" }}>{s.role}</div>
+            <div style={{ fontSize: "11px", color: COLORS.textMuted }}>{s.questions} questions</div>
+          </div>
+          <span style={{ fontSize: "12px", color: COLORS.textSub }}>{s.type}</span>
+          <span style={{ fontSize: "12px", color: diffColor(s.difficulty) }}>{s.difficulty}</span>
+          <span style={{ fontSize: "12px", color: COLORS.textSub }}>{s.duration}m</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ fontSize: "13px", fontWeight: "700", color: sc }}>{p}%</span>
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
+
+          {/* ── SETUP ── */}
+          {stage === "setup" && (
+            <div className="fade-up">
+              <div className="card" style={{ padding: "32px" }}>
+
+                {/* Job Role */}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>TARGET ROLE</label>
+                  <input
+                    placeholder="e.g. AI Engineer, Software Engineer, Product Manager"
+                    value={jobRole}
+                    onChange={(e) => setJobRole(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && startInterview()}
+                    style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", fontSize: "15px" }}
+                  />
+                </div>
+
+                {/* Interview Type */}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>INTERVIEW TYPE</label>
+                  <div className="toggle-group">
+                    {interviewTypes.map(t => (
+                      <button key={t} onClick={() => setInterviewType(t)} className={`toggle-btn ${interviewType === t ? "active" : ""}`}
+                        style={interviewType === t ? { color: COLORS.primary } : {}}>
+                        {t === "Technical" ? "💻 Technical" : t === "HR" ? "🤝 HR" : "🎯 Mixed"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Difficulty */}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>DIFFICULTY</label>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    {difficulties.map(d => (
+                      <button key={d} onClick={() => setDifficulty(d)}
+                        style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${difficulty === d ? diffColor(d) : COLORS.border}`, background: difficulty === d ? `rgba(${d === "Easy" ? "0,229,160" : d === "Medium" ? "255,179,71" : "255,71,87"},0.1)` : COLORS.surface, color: difficulty === d ? diffColor(d) : COLORS.textSub, fontWeight: "600", fontSize: "14px", cursor: "pointer", transition: "all 0.2s", boxShadow: difficulty === d ? `0 0 16px ${diffGlow(d)}` : "none" }}>
+                        {d === "Easy" ? "🟢" : d === "Medium" ? "🟡" : "🔴"} {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div style={{ marginBottom: "24px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>DURATION</label>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    {durations.map(d => (
+                      <button key={d} onClick={() => setDuration(d)}
+                        style={{ flex: 1, padding: "12px", borderRadius: "12px", border: `1px solid ${duration === d ? COLORS.primary : COLORS.border}`, background: duration === d ? `rgba(108,99,255,0.15)` : COLORS.surface, color: duration === d ? COLORS.primary : COLORS.textSub, fontWeight: "600", fontSize: "14px", cursor: "pointer", transition: "all 0.2s", boxShadow: duration === d ? `0 0 16px ${COLORS.primaryGlow}` : "none" }}>
+                        {d}<span style={{ fontSize: "11px", opacity: 0.7 }}>m</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Resume Upload */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>RESUME <span style={{ color: COLORS.textMuted, fontWeight: "400" }}>— optional</span></label>
+                  <div
+                    onClick={() => fileRef.current.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setDragOver(false); e.dataTransfer.files[0] && uploadResume(e.dataTransfer.files[0]); }}
+                    style={{ border: `2px dashed ${resumeText ? COLORS.success : dragOver ? COLORS.primary : COLORS.border}`, borderRadius: "14px", padding: "24px", textAlign: "center", cursor: "pointer", background: resumeText ? "rgba(0,229,160,0.05)" : dragOver ? COLORS.primaryGlow : "transparent", transition: "all 0.2s" }}>
+                    <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={(e) => e.target.files[0] && uploadResume(e.target.files[0])} />
+                    {resumeText ? (
+                      <div>
+                        <div style={{ fontSize: "24px", marginBottom: "6px" }}>✅</div>
+                        <div style={{ color: COLORS.success, fontWeight: "600", fontSize: "14px" }}>{resumeName}</div>
+                        <div style={{ color: COLORS.textMuted, fontSize: "12px", marginTop: "4px" }}>Resume loaded — questions will be personalized</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: "28px", marginBottom: "8px" }}>📄</div>
+                        <div style={{ color: COLORS.textSub, fontSize: "14px" }}>Drop your PDF here or click to browse</div>
+                        <div style={{ color: COLORS.textMuted, fontSize: "12px", marginTop: "4px" }}>Enables personalized questions from your background</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Job Description */}
+                <div style={{ marginBottom: "28px" }}>
+                  <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "10px" }}>JOB DESCRIPTION <span style={{ color: COLORS.textMuted, fontWeight: "400" }}>— optional</span></label>
+                  <textarea
+                    placeholder="Paste the JD here — AI will generate questions targeting exactly what this company wants..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    rows={4}
+                    style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", fontSize: "14px", resize: "vertical", borderColor: jobDescription ? COLORS.primary : COLORS.border }}
+                  />
+                  {jobDescription && <div style={{ color: COLORS.primary, fontSize: "12px", marginTop: "6px" }}>✦ JD active — questions will target this role specifically</div>}
+                </div>
+
+                {/* Start Button */}
+                <button onClick={() => startInterview()} disabled={!jobRole || loading} className="btn-primary"
+                  style={{ width: "100%", padding: "16px", borderRadius: "14px", fontSize: "16px", letterSpacing: "0.02em", boxShadow: jobRole ? `0 8px 32px ${COLORS.primaryGlow}` : "none" }}>
+                  {loading ? "Preparing your interview..." : `Start ${duration}-Minute Interview →`}
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── INTERVIEW ── */}
+          {stage === "interview" && (
+            <div className="fade-up">
+
+              {/* Top bar */}
+              <div className="card" style={{ padding: "14px 20px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <span className="chip" style={{ background: `rgba(108,99,255,0.15)`, color: COLORS.primary }}>{interviewType}</span>
+                  <span className="chip" style={{ background: `rgba(${difficulty === "Easy" ? "0,229,160" : difficulty === "Medium" ? "255,179,71" : "255,71,87"},0.1)`, color: diffColor(difficulty) }}>{difficulty}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {timeExpired && <span style={{ fontSize: "11px", color: COLORS.danger, fontWeight: "600", animation: "timerWarning 1s ease infinite" }}>FINISH ANSWER</span>}
+                  <span style={{ fontFamily: "monospace", fontSize: "22px", fontWeight: "800", color: timerColor, textShadow: `0 0 20px ${timerColor}` }}>
+                    {fmt(timeLeft)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Timer bar */}
+              <div className="progress-bar" style={{ marginBottom: "20px" }}>
+                <div className="progress-fill" style={{ width: `${timerPct}%`, background: `linear-gradient(90deg, ${timerColor}, ${timerColor}88)` }} />
+              </div>
+
+              {/* AI Avatar */}
+              <div className="card" style={{ padding: "48px 24px", textAlign: "center", marginBottom: "16px", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", inset: 0, background: speaking ? `radial-gradient(ellipse at center, rgba(108,99,255,0.08) 0%, transparent 70%)` : listening ? `radial-gradient(ellipse at center, rgba(0,229,160,0.06) 0%, transparent 70%)` : "none", transition: "all 0.5s ease" }} />
+
+                {/* Avatar rings */}
+                <div style={{ position: "relative", width: "100px", height: "100px", margin: "0 auto 24px" }}>
+                  {(speaking || listening) && (
+                    <>
+                      <div style={{ position: "absolute", inset: "-16px", borderRadius: "50%", border: `2px solid ${speaking ? COLORS.primary : COLORS.success}`, opacity: 0.3, animation: "pulse-ring 2s ease-in-out infinite" }} />
+                      <div style={{ position: "absolute", inset: "-32px", borderRadius: "50%", border: `1px solid ${speaking ? COLORS.primary : COLORS.success}`, opacity: 0.15, animation: "pulse-ring2 2s ease-in-out infinite 0.3s" }} />
+                    </>
+                  )}
+                  <div style={{
+                    width: "100px", height: "100px", borderRadius: "50%",
+                    background: speaking ? `linear-gradient(135deg, ${COLORS.primary}, #8B5CF6)` : listening ? `linear-gradient(135deg, ${COLORS.success}, #00B894)` : `linear-gradient(135deg, #1E2D4A, #141B2D)`,
+                    border: `2px solid ${speaking ? COLORS.primary : listening ? COLORS.success : COLORS.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "44px",
+                    boxShadow: speaking ? `0 0 40px ${COLORS.primaryGlow}` : listening ? `0 0 40px ${COLORS.successGlow}` : "none",
+                    transition: "all 0.4s ease",
+                    animation: speaking || listening ? "float 3s ease-in-out infinite" : "none"
+                  }}>
+                    {speaking ? "🎙️" : listening ? "👂" : "🤖"}
+                  </div>
+                </div>
+
+                {/* Sound bars when listening */}
+                {listening && (
+                  <div style={{ display: "flex", gap: "4px", justifyContent: "center", marginBottom: "16px" }}>
+                    {[1, 2, 3, 4, 5, 6, 7].map((_, i) => (
+                      <div key={i} className="sound-bar" style={{ animationDelay: `${i * 0.1}s`, animationDuration: `${0.6 + i * 0.1}s` }} />
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ fontSize: "16px", fontWeight: "600", color: speaking ? COLORS.primary : listening ? COLORS.success : COLORS.textSub, marginBottom: "6px", transition: "color 0.3s" }}>
+                  {speaking ? "AI Interviewer is speaking..." : listening ? "Listening to your answer..." : aiStatus}
+                </div>
+                {questionNum > 0 && (
+                  <div style={{ fontSize: "12px", color: COLORS.textMuted }}>
+                    Question {questionNum} · {allQA.length} answered
+                  </div>
+                )}
+              </div>
+
+              {/* Transcript */}
+              {(listening || currentTranscript) && (
+                <div className="card" style={{ padding: "16px 20px", marginBottom: "16px", borderColor: COLORS.success + "44" }}>
+                  <div style={{ fontSize: "11px", fontWeight: "600", color: COLORS.success, letterSpacing: "0.08em", marginBottom: "8px" }}>YOUR ANSWER</div>
+                  <p style={{ color: COLORS.text, fontSize: "14px", lineHeight: "1.7", minHeight: "36px" }}>
+                    {currentTranscript || <span style={{ color: COLORS.textMuted, fontStyle: "italic" }}>Start speaking...</span>}
+                  </p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                {!listening ? (
+                  <button onClick={startListening} disabled={speaking || loading} className="btn-primary"
+                    style={{ flex: 1, padding: "18px", borderRadius: "14px", fontSize: "16px", boxShadow: !speaking && !loading ? `0 8px 32px ${COLORS.primaryGlow}` : "none" }}>
+                    🎤 Speak Answer
+                  </button>
+                ) : (
+                  <button onClick={endAnswer} className="btn-success"
+                    style={{ flex: 1, padding: "18px", borderRadius: "14px", fontSize: "16px", boxShadow: `0 8px 32px ${COLORS.successGlow}` }}>
+                    ✅ End Answer
+                  </button>
+                )}
+                <button onClick={restart} className="btn-ghost" style={{ padding: "18px 20px", borderRadius: "14px", fontSize: "14px" }}>Exit</button>
+              </div>
+            </div>
+          )}
+
+          {/* ── EVALUATING ── */}
+          {stage === "evaluating" && (
+            <div className="card fade-up" style={{ padding: "60px 24px", textAlign: "center" }}>
+              <div style={{ width: "60px", height: "60px", border: `3px solid ${COLORS.border}`, borderTopColor: COLORS.primary, borderRadius: "50%", margin: "0 auto 24px", animation: "spin 1s linear infinite" }} />
+              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "22px", fontWeight: "700", marginBottom: "8px" }}>Evaluating your performance</h2>
+              <p style={{ color: COLORS.textMuted, fontSize: "14px" }}>Analysing {allQA.length} answers with AI — this takes a moment</p>
+            </div>
+          )}
+
+          {/* ── RESULTS ── */}
+          {stage === "results" && results && (
+            <div className="fade-up">
+
+              {/* Score card */}
+              <div className="card" style={{ padding: "36px", textAlign: "center", marginBottom: "20px", background: `linear-gradient(135deg, ${COLORS.card}, rgba(${results.total_score / results.max_score >= 0.7 ? "0,229,160" : results.total_score / results.max_score >= 0.5 ? "255,179,71" : "255,71,87"},0.05))`, borderColor: scoreColor((results.total_score / results.max_score) * 10) + "44" }}>
+                <div style={{ fontSize: "11px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.1em", marginBottom: "16px" }}>INTERVIEW COMPLETE · {duration} MIN · {results.results.length} QUESTIONS</div>
+                <div style={{ fontSize: "72px", fontWeight: "900", fontFamily: "'Space Grotesk', sans-serif", color: scoreColor((results.total_score / results.max_score) * 10), textShadow: `0 0 40px ${scoreGlow((results.total_score / results.max_score) * 10)}`, lineHeight: 1, marginBottom: "8px" }}>
+                  {results.total_score}<span style={{ fontSize: "32px", color: COLORS.textMuted }}>/{results.max_score}</span>
+                </div>
+                <div style={{ fontSize: "14px", color: COLORS.textSub, marginBottom: "16px" }}>{pct(results.total_score, results.max_score)}% · {interviewType} · {difficulty}</div>
+                <div className="chip" style={{ background: scoreGlow((results.total_score / results.max_score) * 10), color: scoreColor((results.total_score / results.max_score) * 10), fontSize: "13px", padding: "6px 16px" }}>
+                  {results.total_score >= results.max_score * 0.7 ? "🏆 Interview Ready!" : results.total_score >= results.max_score * 0.5 ? "📈 Keep Practicing" : "💪 You'll Get There"}
+                </div>
+              </div>
+
+              {/* Continue options */}
+              {showContinueOptions && (
+                <div className="card" style={{ padding: "24px", marginBottom: "20px", borderColor: COLORS.primary + "44" }}>
+                  <div style={{ fontSize: "15px", fontWeight: "700", marginBottom: "4px" }}>Continue Interview</div>
+                  <div style={{ fontSize: "13px", color: COLORS.textMuted, marginBottom: "20px" }}>Same role, resume & JD · Adjust difficulty or duration</div>
+
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "8px" }}>DIFFICULTY</label>
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                    {difficulties.map(d => (
+                      <button key={d} onClick={() => setContinueDifficulty(d)}
+                        style={{ flex: 1, padding: "10px", borderRadius: "10px", border: `1px solid ${continueDifficulty === d ? diffColor(d) : COLORS.border}`, background: continueDifficulty === d ? `rgba(${d === "Easy" ? "0,229,160" : d === "Medium" ? "255,179,71" : "255,71,87"},0.1)` : COLORS.surface, color: continueDifficulty === d ? diffColor(d) : COLORS.textSub, fontWeight: "600", fontSize: "13px", cursor: "pointer", transition: "all 0.2s" }}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+
+                  <label style={{ display: "block", fontSize: "11px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "8px" }}>DURATION</label>
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                    {durations.map(d => (
+                      <button key={d} onClick={() => setContinueDuration(d)}
+                        style={{ flex: 1, padding: "10px", borderRadius: "10px", border: `1px solid ${continueDuration === d ? COLORS.primary : COLORS.border}`, background: continueDuration === d ? "rgba(108,99,255,0.15)" : COLORS.surface, color: continueDuration === d ? COLORS.primary : COLORS.textSub, fontWeight: "600", fontSize: "13px", cursor: "pointer", transition: "all 0.2s" }}>
+                        {d}m
+                      </button>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button onClick={() => { setDifficulty(continueDifficulty); setDuration(continueDuration); startInterview(continueDifficulty, continueDuration); }}
+                      disabled={!continueDifficulty || !continueDuration} className="btn-primary"
+                      style={{ flex: 1, padding: "13px", borderRadius: "12px", fontSize: "14px" }}>
+                      🚀 Launch Interview
+                    </button>
+                    <button onClick={() => setShowContinueOptions(false)} className="btn-ghost" style={{ padding: "13px 16px", borderRadius: "12px", fontSize: "14px" }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Per question feedback */}
+              {results.results.map((r, i) => (
+                <div key={i} className="card" style={{ padding: "24px", marginBottom: "14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" }}>
+                    <div style={{ display: "flex", gap: "10px", flex: 1 }}>
+                      <span style={{ width: "28px", height: "28px", borderRadius: "8px", background: `linear-gradient(135deg, ${COLORS.primary}, #8B5CF6)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", flexShrink: 0, color: "white" }}>{i + 1}</span>
+                      <p style={{ color: COLORS.text, fontSize: "14px", lineHeight: "1.6", margin: 0 }}>{r.question}</p>
+                    </div>
+                    <div style={{ textAlign: "center", marginLeft: "16px", flexShrink: 0 }}>
+                      <div style={{ fontSize: "26px", fontWeight: "800", fontFamily: "'Space Grotesk', sans-serif", color: scoreColor(r.score), textShadow: `0 0 16px ${scoreGlow(r.score)}` }}>{r.score}/10</div>
+                      <div style={{ fontSize: "10px", fontWeight: "600", color: scoreColor(r.score), letterSpacing: "0.05em" }}>{scoreLabel(r.score).toUpperCase()}</div>
+                    </div>
+                  </div>
+                  <div style={{ background: COLORS.surface, borderRadius: "10px", padding: "12px 14px", marginBottom: "10px", borderLeft: `3px solid ${COLORS.border}` }}>
+                    <div style={{ fontSize: "10px", fontWeight: "600", color: COLORS.textMuted, letterSpacing: "0.08em", marginBottom: "6px" }}>YOUR ANSWER</div>
+                    <p style={{ color: COLORS.textSub, fontSize: "13px", margin: 0, lineHeight: "1.6" }}>{r.answer}</p>
+                  </div>
+                  <pre style={{ whiteSpace: "pre-wrap", color: COLORS.textSub, fontSize: "13px", lineHeight: "1.8", margin: 0, background: COLORS.surface, padding: "14px", borderRadius: "10px", fontFamily: "'Inter', sans-serif" }}>{r.feedback}</pre>
+                </div>
+              ))}
+
+              {/* Bottom action buttons */}
+              {!showContinueOptions && (
+                <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                  <button onClick={() => { setContinueDifficulty(difficulty); setContinueDuration(duration); setShowContinueOptions(true); }}
+                    className="btn-success" style={{ flex: 1, padding: "15px", borderRadius: "14px", fontSize: "15px" }}>
+                    ▶ Continue Interview
+                  </button>
+                  <button onClick={restart} className="btn-ghost" style={{ flex: 1, padding: "15px", borderRadius: "14px", fontSize: "15px" }}>
+                    Start New
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
   );
 }
-
-export default App;
