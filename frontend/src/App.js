@@ -22,6 +22,9 @@ function App() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [timeExpired, setTimeExpired] = useState(false);
   const [questionNum, setQuestionNum] = useState(0);
+  const [showContinueOptions, setShowContinueOptions] = useState(false);
+  const [continueDifficulty, setContinueDifficulty] = useState("");
+  const [continueDuration, setContinueDuration] = useState(0);
 
   const fileRef = useRef();
   const recognitionRef = useRef(null);
@@ -66,13 +69,13 @@ function App() {
 
   const stopTimer = () => { if (timerRef.current) clearInterval(timerRef.current); };
 
-  const fetchNextQuestion = async (prevQs) => {
+  const fetchNextQuestion = async (prevQs, diffOverride, roleOverride) => {
     const res = await fetch("http://127.0.0.1:8000/get-next-question", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        job_role: jobRole,
-        difficulty,
+        job_role: roleOverride || jobRole,
+        difficulty: diffOverride || difficulty,
         interview_type: interviewType,
         resume_text: resumeText,
         previous: prevQs,
@@ -83,9 +86,9 @@ function App() {
     return data.question;
   };
 
-  const askNextQuestion = async (prevQs, qNum) => {
+  const askNextQuestion = async (prevQs, qNum, diffOverride) => {
     setAiStatus("AI is thinking of next question...");
-    const question = await fetchNextQuestion(prevQs);
+    const question = await fetchNextQuestion(prevQs, diffOverride);
     setCurrentQuestion(question);
     setQuestionNum(qNum);
     setCurrentTranscript("");
@@ -103,7 +106,9 @@ function App() {
     setResumeText(data.resume_text);
   };
 
-  const startInterview = async () => {
+  const startInterview = async (diffOverride, durOverride) => {
+    const activeDiff = diffOverride || difficulty;
+    const activeDur = durOverride || duration;
     if (!jobRole) return;
     setLoading(true);
     setAllQA([]);
@@ -111,6 +116,7 @@ function App() {
     setCurrentTranscript("");
     setResults(null);
     setQuestionNum(0);
+    setShowContinueOptions(false);
 
     try {
       const saved = localStorage.getItem(getStorageKey(jobRole));
@@ -121,14 +127,20 @@ function App() {
     setStage("interview");
     setLoading(false);
 
-    const greeting = `Hi, welcome! Thank you for joining today's ${interviewType} interview for the ${jobRole} role. This will be a ${duration}-minute interview at ${difficulty} level. Let's begin!`;
+    const greeting = `Hi, welcome back! This will be a ${activeDur}-minute ${interviewType} interview for the ${jobRole} role at ${activeDiff} level. Let's begin!`;
     setAiStatus("AI Interviewer is greeting you...");
     speakText(greeting, async () => {
-      startTimer(duration);
+      startTimer(activeDur);
       const saved = localStorage.getItem(getStorageKey(jobRole));
       const savedPrev = saved ? JSON.parse(saved) : [];
-      await askNextQuestion(savedPrev, 1);
+      await askNextQuestion(savedPrev, 1, activeDiff);
     });
+  };
+
+  const continueInterview = () => {
+    setContinueDifficulty(difficulty);
+    setContinueDuration(duration);
+    setShowContinueOptions(true);
   };
 
   const startListening = () => {
@@ -226,7 +238,7 @@ function App() {
     if (recognitionRef.current) { recognitionRef.current.stop(); recognitionRef.current = null; }
     setJobRole(""); setCurrentQuestion(""); setAllQA([]); setPreviousQuestions([]);
     setCurrentTranscript(""); setResults(null); setResumeText(""); setResumeName("");
-    setJobDescription("");
+    setJobDescription(""); setShowContinueOptions(false);
     setListening(false); setSpeaking(false); setAiStatus(""); setTimeLeft(0);
     setTimeExpired(false); setQuestionNum(0); setStage("setup");
   };
@@ -271,6 +283,7 @@ function App() {
           </div>
         )}
 
+        {/* SETUP */}
         {stage === "setup" && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px" }}>
             <h2 style={{ color: "#e2e8f0", margin: "0 0 24px", fontSize: "18px" }}>Start your mock interview</h2>
@@ -326,21 +339,20 @@ function App() {
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
               rows={5}
-              style={{ width: "100%", padding: "12px", borderRadius: "10px", border: jobDescription ? "1px solid #6366f1" : "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "14px", marginBottom: "20px", boxSizing: "border-box", resize: "vertical" }}
+              style={{ width: "100%", padding: "12px", borderRadius: "10px", border: jobDescription ? "1px solid #6366f1" : "1px solid #334155", background: "#0f172a", color: "#e2e8f0", fontSize: "14px", marginBottom: jobDescription ? "8px" : "20px", boxSizing: "border-box", resize: "vertical" }}
             />
             {jobDescription && (
-              <p style={{ color: "#6366f1", fontSize: "11px", marginTop: "-14px", marginBottom: "16px" }}>
-                ✅ JD added — questions will target this specific role
-              </p>
+              <p style={{ color: "#6366f1", fontSize: "11px", marginBottom: "16px" }}>✅ JD added — questions will target this specific role</p>
             )}
 
-            <button onClick={startInterview} disabled={!jobRole || loading}
+            <button onClick={() => startInterview()} disabled={!jobRole || loading}
               style={{ width: "100%", padding: "14px", borderRadius: "10px", border: "none", background: !jobRole ? "#334155" : "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: !jobRole ? "not-allowed" : "pointer" }}>
               {loading ? "Preparing interview..." : `Start ${duration}-Minute Interview →`}
             </button>
           </div>
         )}
 
+        {/* INTERVIEW */}
         {stage === "interview" && (
           <div>
             <div style={{ background: "#1e293b", borderRadius: "12px", padding: "16px 20px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -400,6 +412,7 @@ function App() {
           </div>
         )}
 
+        {/* EVALUATING */}
         {stage === "evaluating" && (
           <div style={{ background: "#1e293b", borderRadius: "16px", padding: "60px 24px", textAlign: "center" }}>
             <div style={{ fontSize: "48px", marginBottom: "20px" }}>🤖</div>
@@ -408,6 +421,7 @@ function App() {
           </div>
         )}
 
+        {/* RESULTS */}
         {stage === "results" && results && (
           <div>
             <div style={{ background: "#1e293b", borderRadius: "16px", padding: "32px", textAlign: "center", marginBottom: "24px" }}>
@@ -423,6 +437,53 @@ function App() {
                   results.total_score >= results.max_score * 0.5 ? "Good performance. Keep practicing!" : "Keep practicing. You'll get there!"}
               </p>
             </div>
+
+            {/* Continue Interview Options */}
+            {showContinueOptions && (
+              <div style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "20px", border: "1px solid #6366f1" }}>
+                <h3 style={{ color: "#e2e8f0", margin: "0 0 8px", fontSize: "16px" }}>Continue Interview</h3>
+                <p style={{ color: "#64748b", fontSize: "13px", margin: "0 0 16px" }}>
+                  Same role ({jobRole}) · Same resume · Same JD. Change difficulty or duration if needed.
+                </p>
+
+                <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Difficulty</p>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+                  {difficulties.map(d => (
+                    <button key={d} onClick={() => setContinueDifficulty(d)}
+                      style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: continueDifficulty === d ? (d === "Easy" ? "#10b981" : d === "Medium" ? "#f59e0b" : "#ef4444") : "#334155", color: continueDifficulty === d ? "white" : "#94a3b8" }}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+
+                <p style={{ color: "#94a3b8", fontSize: "13px", margin: "0 0 10px" }}>Duration</p>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+                  {durations.map(d => (
+                    <button key={d} onClick={() => setContinueDuration(d)}
+                      style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: "600", background: continueDuration === d ? "#6366f1" : "#334155", color: continueDuration === d ? "white" : "#94a3b8" }}>
+                      {d} min
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    onClick={() => {
+                      setDifficulty(continueDifficulty);
+                      setDuration(continueDuration);
+                      startInterview(continueDifficulty, continueDuration);
+                    }}
+                    disabled={!continueDifficulty || !continueDuration}
+                    style={{ flex: 1, padding: "13px", borderRadius: "10px", border: "none", background: !continueDifficulty || !continueDuration ? "#334155" : "#6366f1", color: "white", fontSize: "14px", fontWeight: "600", cursor: !continueDifficulty || !continueDuration ? "not-allowed" : "pointer" }}>
+                    🚀 Start Continue Interview
+                  </button>
+                  <button onClick={() => setShowContinueOptions(false)}
+                    style={{ padding: "13px 16px", borderRadius: "10px", border: "1px solid #334155", background: "transparent", color: "#64748b", fontSize: "14px", cursor: "pointer" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
 
             {results.results.map((r, i) => (
               <div key={i} style={{ background: "#1e293b", borderRadius: "16px", padding: "24px", marginBottom: "16px" }}>
@@ -444,10 +505,19 @@ function App() {
               </div>
             ))}
 
-            <button onClick={restart}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "#6366f1", color: "white", fontSize: "15px", fontWeight: "600", cursor: "pointer", marginTop: "8px" }}>
-              Start New Interview
-            </button>
+            {/* Bottom buttons */}
+            {!showContinueOptions && (
+              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+                <button onClick={continueInterview}
+                  style={{ flex: 1, padding: "14px", borderRadius: "12px", border: "none", background: "#10b981", color: "white", fontSize: "15px", fontWeight: "600", cursor: "pointer" }}>
+                  ▶ Continue Interview
+                </button>
+                <button onClick={restart}
+                  style={{ flex: 1, padding: "14px", borderRadius: "12px", border: "1px solid #334155", background: "transparent", color: "#94a3b8", fontSize: "15px", fontWeight: "600", cursor: "pointer" }}>
+                  Start New Interview
+                </button>
+              </div>
+            )}
           </div>
         )}
 
